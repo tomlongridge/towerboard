@@ -17,6 +17,9 @@ class CreateBoard extends Migration
             $table->bigIncrements('id');
             $table->timestamps();
             $table->string('name');
+            $table->unsignedBigInteger('owner_id');
+
+            $table->foreign('owner_id')->references('id')->on('users');
             $table->softDeletes();
         });
     }

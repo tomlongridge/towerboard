@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => 'Towerboard',
 
     /*
     |--------------------------------------------------------------------------
@@ -173,6 +173,7 @@ return [
         App\Providers\AuthServiceProvider::class,
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
+        //App\Providers\TelescopeServiceProvider::class, // Removed from global config and conditionally added to AppServiceProvider
         App\Providers\RouteServiceProvider::class,
 
     ],

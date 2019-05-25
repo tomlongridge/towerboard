@@ -36,11 +36,8 @@ class NoticeController extends Controller
      */
     public function store(Request $request, Board $board)
     {
-        $fields = $request->validate( ['title' => 'required',
-                                       'body' => 'required']);
-        $notice = $board->addNotice($fields);
-
-        return redirect("/boards/$board->id");
+        $notice = $board->addNotice($this->validateFields($request));
+        return redirect(route('boards.show', ['board' => $board->id]));
     }
 
     /**
@@ -60,9 +57,9 @@ class NoticeController extends Controller
      * @param  \App\Notice  $notice
      * @return \Illuminate\Http\Response
      */
-    public function edit(Notice $notice)
+    public function edit(Board $board, Notice $notice)
     {
-        //
+        return view('notices.edit', compact('notice'));
     }
 
     /**
@@ -72,9 +69,10 @@ class NoticeController extends Controller
      * @param  \App\Notice  $notice
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Notice $notice)
+    public function update(Request $request, Board $board, Notice $notice)
     {
-        //
+        $notice->update($this->validateFields($request));
+        return redirect(route('notices.show', ['board' => $board->id, 'notice' => $notice->id]));
     }
 
     /**
@@ -88,5 +86,13 @@ class NoticeController extends Controller
         $notice->delete();
 
         return redirect("/boards/$board->id");
+    }
+
+    private function validateFields($request)
+    {
+        return $request->validate(
+            [ 'title' => 'required',
+              'body' => 'required' ]
+        );
     }
 }

@@ -1,6 +1,6 @@
-@extends('layout')
+@extends('layouts.app')
 
-@section('body')
+@section('content')
 
     <h1 class="mt-4">Create Board</h1>
 

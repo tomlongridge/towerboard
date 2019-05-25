@@ -2,8 +2,8 @@
 
 ## Order of Implementation
 
-1. Create Board
-0. Create Notice in Board
+1. ~~Create Board~~
+0. ~~Create Notice in Board~~
 0. Create Account
 0. Board Owner Permissions
 0. Subscribe/Unsubscribe to Board

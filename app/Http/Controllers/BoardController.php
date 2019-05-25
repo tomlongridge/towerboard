@@ -36,7 +36,7 @@ class BoardController extends Controller
      */
     public function store(Request $request)
     {
-        Board::create($this->validateFields($request));
+        Board::create($this->validateFields($request) + ['owner_id' => auth()->id()]);
         return redirect(route('boards.index'));
     }
 

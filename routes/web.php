@@ -11,10 +11,16 @@
 |
 */
 
+Auth::routes();
+
+
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('home');
 
 Route::resource('boards', 'BoardController');
 
 Route::resource('boards/{board}/notices', 'NoticeController');
+
+Route::get('/account', 'UserController@edit')->name('accounts.edit');
+Route::patch('/account', 'UserController@update')->name('accounts.update');

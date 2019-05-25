@@ -1,8 +1,12 @@
-@extends('layout')
+@extends('layouts.app')
 
-@section('body')
+@section('content')
 
     <h1 class="mt-4">{{ $board->name }}</h1>
+
+    <p>
+        This board is managed by: {{ $board->owner->name }}.
+    </p>
 
     <a class="btn btn-primary" href="{{ route('boards.edit',[ 'board' => $board->id ]) }}">Edit</a>
 
@@ -23,6 +27,7 @@
         </ul>
     @endif
 
+    <h3>Add Notice</h3>
     <div class="container">
         <form method="POST" action="/boards/{{ $board->id }}/notices">
             @csrf
