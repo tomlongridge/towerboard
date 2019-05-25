@@ -13,12 +13,17 @@ class CreateNotice extends Migration
      */
     public function up()
     {
-        Schema::create('notice', function (Blueprint $table) {
+        Schema::create('notices', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->timestamps();
             $table->string('title');
             $table->text('body');
+            $table->unsignedBigInteger('board_id');
+
+            $table->foreign('board_id')->references('id')->on('boards');
+            $table->softDeletes();
         });
+
     }
 
     /**
@@ -28,6 +33,10 @@ class CreateNotice extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('notice');
+        Schema::table('notices', function (Blueprint $table) {
+            $table->dropForeign(['board_id']);
+        });
+
+        Schema::dropIfExists('notices');
     }
 }

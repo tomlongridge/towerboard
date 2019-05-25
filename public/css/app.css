@@ -10672,6 +10672,10 @@ body {
   overflow-x: hidden;
 }
 
+.row {
+  padding-top: 10px;
+}
+
 #sidebar-wrapper {
   min-height: 100vh;
   margin-left: -15rem;

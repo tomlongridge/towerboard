@@ -16,3 +16,5 @@ Route::get('/', function () {
 });
 
 Route::resource('boards', 'BoardController');
+
+Route::resource('boards/{board}/notices', 'NoticeController');

@@ -36,14 +36,8 @@ class BoardController extends Controller
      */
     public function store(Request $request)
     {
-        $fields = $request->validate(
-            [ 'name' => 'required' ]
-        );
-
-
-        Board::create($fields);
-
-        return redirect('/boards');
+        Board::create($this->validateFields($request));
+        return redirect(route('boards.index'));
     }
 
     /**
@@ -65,7 +59,7 @@ class BoardController extends Controller
      */
     public function edit(Board $board)
     {
-        //
+        return view('boards.edit', compact('board'));
     }
 
     /**
@@ -77,7 +71,9 @@ class BoardController extends Controller
      */
     public function update(Request $request, Board $board)
     {
-        //
+        $board->update($this->validateFields($request));
+
+        return redirect(route('boards.show', ['board' => $board->id]));
     }
 
     /**
@@ -88,6 +84,15 @@ class BoardController extends Controller
      */
     public function destroy(Board $board)
     {
-        //
+        $board->delete();
+
+        return redirect(route('boards.index'));
+    }
+
+    private function validateFields($request)
+    {
+        return $request->validate(
+            [ 'name' => 'required' ]
+        );
     }
 }

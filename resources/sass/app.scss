@@ -12,9 +12,13 @@
  * Copyright 2013-2019 Start Bootstrap
  * Licensed under MIT (https://github.com/BlackrockDigital/startbootstrap-simple-sidebar/blob/master/LICENSE)
  */
- body {
+body {
     overflow-x: hidden;
-  }
+}
+
+.row {
+    padding-top: 10px
+}
 
   #sidebar-wrapper {
     min-height: 100vh;
