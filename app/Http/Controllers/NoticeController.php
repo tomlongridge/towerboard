@@ -8,6 +8,11 @@ use Illuminate\Http\Request;
 
 class NoticeController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Notice::class, 'notice');
+    }
+
     /**
      * Display a listing of the resource.
      *

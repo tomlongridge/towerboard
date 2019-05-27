@@ -25,43 +25,37 @@
             <!-- Page Content -->
             <div id="page-content-wrapper">
 
-            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
-                <button class="btn btn-primary" id="menu-toggle">Toggle Menu</button>
+                <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav ml-auto mt-2 mt-lg-0">
+                        @guest
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('login') }}">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('register') }}">Register</a>
+                            </li>
+                        @else
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('accounts.edit') }}">Account ({{ Auth::user()->forename }})</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                href="{{ route('logout') }}"
+                                onClick="event.preventDefault();
+                                            document.getElementById('logout-form').submit();">Logout</a>
+                                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                            </li>
+                        @endguest
+                        </ul>
+                    </div>
+                </nav>
 
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <ul class="navbar-nav ml-auto mt-2 mt-lg-0">
-                    @guest
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('login') }}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('register') }}">Register</a>
-                        </li>
-                    @else
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('accounts.edit') }}">My Account</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link"
-                               href="{{ route('logout') }}"
-                               onClick="event.preventDefault();
-                                        document.getElementById('logout-form').submit();">Logout</a>
-                            <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                                @csrf
-                            </form>
-                        </li>
-                    @endguest
-                    </ul>
+                <div class="container-fluid">
+                    @yield('content')
                 </div>
-            </nav>
-
-            <div class="container-fluid">
-                @yield('content')
-            </div>
             </div>
             <!-- /#page-content-wrapper -->
 
@@ -71,14 +65,6 @@
         <script src="/js/manifest.js"></script>
         <script src="/js/vendor.js"></script>
         <script src="{{ mix('/js/app.js') }}"></script>
-
-        <!-- Menu Toggle Script -->
-        <script>
-            $("#menu-toggle").click(function(e) {
-            e.preventDefault();
-            $("#wrapper").toggleClass("toggled");
-            });
-        </script>
 
     </body>
 </html>

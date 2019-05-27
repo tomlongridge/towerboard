@@ -7,6 +7,11 @@ use Illuminate\Http\Request;
 
 class BoardController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Board::class, 'board');
+    }
+
     /**
      * Display a listing of the resource.
      *

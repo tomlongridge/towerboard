@@ -17,6 +17,7 @@ class Board extends Model
         parent::boot();
 
         static::deleting(function($board) {
+            // Remove all associated notices
             $board->notices()->delete();
         });
     }

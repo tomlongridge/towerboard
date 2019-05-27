@@ -10,6 +10,8 @@
     @endforeach
     </ul>
 
-    <a class="btn btn-primary" id="menu-toggle" href="/boards/create">Create</a>
+    @auth
+        <a class="btn btn-primary" id="menu-toggle" href="/boards/create">Create</a>
+    @endauth
 
 @endsection
