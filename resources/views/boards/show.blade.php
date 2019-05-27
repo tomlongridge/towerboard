@@ -18,6 +18,21 @@
         </form>
     @endcan
 
+    @auth
+        @if (!Auth::user()->isSubscribed())
+            <form method="POST" action="{{ route('subscriptions.store', [ 'board' => $board->id ]) }}" style="display: inline">
+                @csrf
+                <input type="submit" class="btn btn-primary" value="Subscribe" />
+            </form>
+        @else
+            <form method="POST" action="{{ route('subscriptions.destroy', [ 'board' => $board->id ]) }}" style="display: inline">
+                @csrf
+                @method("DELETE")
+                <input type="submit" class="btn btn-primary" value="Unsubscribe" />
+            </form>
+        @endif
+    @endauth
+
     <hr />
 
     <h2>Notices</h2>

@@ -37,6 +37,17 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    public function subscriptions() {
+        return $this->belongsToMany('App\Board', 'board_subscriptions')
+        ->using('App\BoardSubscription')
+        ->withTimestamps();
+    }
+
+    public function isSubscribed()
+    {
+        return $this->subscriptions()->where('boards.id', $this->attributes['id'])->exists();
+    }
+
     public function getNameAttribute() {
         return $this->attributes['forename'] . ' ' .
                $this->attributes['middle_initials'] . ' ' . // TODO: guard for empty

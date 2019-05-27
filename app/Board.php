@@ -22,7 +22,8 @@ class Board extends Model
         });
     }
 
-    public function addNotice(array $fields) {
+    public function addNotice(array $fields)
+    {
         return Notice::create(array_merge($fields, ['board_id' => $this->id]));
     }
 
@@ -34,5 +35,11 @@ class Board extends Model
     public function owner()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function subscribers() {
+        return $this->belongsToMany('App\User', 'board_subscriptions')
+                    ->using('App\BoardSubscription')
+                    ->withTimestamps();
     }
 }
