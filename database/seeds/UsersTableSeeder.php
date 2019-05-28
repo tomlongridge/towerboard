@@ -16,7 +16,8 @@ class UsersTableSeeder extends Seeder
             'middle_initials' => 'N',
             'surname' => 'Longridge',
             'email' => 'tomlongridge@gmail.com',
-            'password' => bcrypt('password')
+            'password' => bcrypt('password'),
+            'email_verified_at' => new DateTime
         ]);
     }
 }

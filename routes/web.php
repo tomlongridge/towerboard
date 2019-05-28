@@ -11,20 +11,23 @@
 |
 */
 
-Auth::routes();
-
+Auth::routes(['verify' => true]);
 
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-Route::resource('/boards', 'BoardController');
+Route::resource('/boards', 'BoardController')->middleware('verified');
 
-Route::resource('/boards/{board}/notices', 'NoticeController');
-Route::get('/boards/{board}/notices/{notice}/mail', 'NoticeController@mail');
+Route::resource('/boards/{board}/notices', 'NoticeController')->middleware('verified');
+Route::get('/boards/{board}/notices/{notice}/mail', 'NoticeController@mail')->middleware('verified');
 
-Route::post('/boards/{board}/subscriptions', 'SubscriptionController@store')->name('subscriptions.store');
-Route::delete('/boards/{board}/subscriptions', 'SubscriptionController@destroy')->name('subscriptions.destroy');
+Route::post('/boards/{board}/subscriptions', 'SubscriptionController@store')->name('subscriptions.store')->middleware('verified');
+Route::delete('/boards/{board}/subscriptions', 'SubscriptionController@destroy')->name('subscriptions.destroy')->middleware('verified');
 
-Route::get('/account', 'UserController@edit')->name('accounts.edit');
-Route::patch('/account', 'UserController@update')->name('accounts.update');
+Route::get('/account', 'UserController@edit')->name('accounts.edit')->middleware('verified');
+Route::patch('/account', 'UserController@update')->name('accounts.update')->middleware('verified');
+
+Auth::routes();
+
+Route::get('/home', 'HomeController@index')->name('home');
