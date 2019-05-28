@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Board;
 use App\Notice;
+use App\Notifications\NoticeCreated;
 use Illuminate\Http\Request;
+use Notification;
 
 class NoticeController extends Controller
 {
@@ -42,6 +44,9 @@ class NoticeController extends Controller
     public function store(Request $request, Board $board)
     {
         $notice = $board->addNotice($this->validateFields($request));
+
+        Notification::send($board->subscribers()->get(), new NoticeCreated($notice));
+
         return redirect(route('boards.show', ['board' => $board->id]));
     }
 
@@ -91,6 +96,11 @@ class NoticeController extends Controller
         $notice->delete();
 
         return redirect("/boards/$board->id");
+    }
+
+    public function mail(Board $board, Notice $notice)
+    {
+        return new NoticeCreated($notice);
     }
 
     private function validateFields($request)

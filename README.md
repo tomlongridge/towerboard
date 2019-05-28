@@ -6,8 +6,8 @@
 0. ~~Create Notice in Board~~
 0. ~~Create Account~~
 0. ~~Board Owner Permissions~~
-0. Subscribe/Unsubscribe to Board
-0. Notifications to Subscribers
+0. ~~Subscribe/Unsubscribe to Board~~
+0. ~~Notifications to Subscribers~~
 0. Associations/Guilds/Branches/Districts
 0. Browse/Search Boards
 0. Committee Page

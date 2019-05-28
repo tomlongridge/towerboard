@@ -21,6 +21,7 @@ Route::get('/', function () {
 Route::resource('/boards', 'BoardController');
 
 Route::resource('/boards/{board}/notices', 'NoticeController');
+Route::get('/boards/{board}/notices/{notice}/mail', 'NoticeController@mail');
 
 Route::post('/boards/{board}/subscriptions', 'SubscriptionController@store')->name('subscriptions.store');
 Route::delete('/boards/{board}/subscriptions', 'SubscriptionController@destroy')->name('subscriptions.destroy');
