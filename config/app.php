@@ -175,6 +175,8 @@ return [
         App\Providers\EventServiceProvider::class,
         //App\Providers\TelescopeServiceProvider::class, // Removed from global config and conditionally added to AppServiceProvider
         App\Providers\RouteServiceProvider::class,
+        App\Providers\CreateTowerCache::class,
+        App\Providers\CreateGuildCache::class,
 
     ],
 

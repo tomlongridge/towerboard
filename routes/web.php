@@ -18,6 +18,8 @@ Route::get('/', function () {
 })->name('home');
 
 Route::resource('/boards', 'BoardController')->middleware('verified');
+Route::resource('/api/guilds', 'GuildController')->middleware('verified');
+
 
 Route::resource('/boards/{board}/notices', 'NoticeController')->middleware('verified');
 Route::get('/boards/{board}/notices/{notice}/mail', 'NoticeController@mail')->middleware('verified');

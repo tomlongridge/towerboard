@@ -18,9 +18,8 @@ class CreateNotice extends Migration
             $table->timestamps();
             $table->string('title');
             $table->text('body');
-            $table->unsignedBigInteger('board_id');
+            $table->unsignedBigInteger('board_id'); // FK->boards
 
-            $table->foreign('board_id')->references('id')->on('boards');
             $table->softDeletes();
         });
 
@@ -33,10 +32,6 @@ class CreateNotice extends Migration
      */
     public function down()
     {
-        Schema::table('notices', function (Blueprint $table) {
-            $table->dropForeign(['board_id']);
-        });
-
         Schema::dropIfExists('notices');
     }
 }

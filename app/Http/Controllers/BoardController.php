@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Board;
+
 use Illuminate\Http\Request;
 
 class BoardController extends Controller
@@ -96,8 +97,9 @@ class BoardController extends Controller
 
     private function validateFields($request)
     {
-        return $request->validate(
-            [ 'name' => 'required' ]
-        );
+        return $request->validate([
+            'name' => 'required',
+            'tower_id' => ''
+        ]);
     }
 }

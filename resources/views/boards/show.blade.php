@@ -3,6 +3,9 @@
 @section('content')
 
     <h1 class="mt-4">{{ $board->name }}</h1>
+    @if($board->tower)
+    <h2 class="mt-4">{{ $board->tower->getName() }}</h2>
+    @endif
 
     <p>
         This board is managed by: {{ $board->owner->name }}.

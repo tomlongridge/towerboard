@@ -13,6 +13,15 @@
                 <input type="text" class="form-control" id="name" name="name" placeholder="My Tower" value="" />
             </div>
             <div class="row">
+                <label for="name">Tower</label>
+                <select class="form-control" id="tower" name="tower_id">
+                        <option value="">Unattached</option>
+                    @foreach (cache('towers') as $tower)
+                        <option value="{{ $tower->id }}">{{ $tower->getName() }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="row">
                 <input type="submit" class="btn btn-primary" id="menu-toggle" value="Create" />
             </div>
         </form>

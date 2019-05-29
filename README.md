@@ -17,3 +17,8 @@
 0. Import Users
 0. Email Digest
 0. Member/Friend Status
+
+## To Dos
+
+* https://www.larashout.com/how-to-use-repository-pattern-in-laravel to cache when required
+* Change route key: https://laraveldaily.com/route-model-binding-how-to-change-the-key/

@@ -37,6 +37,16 @@ class Board extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function tower()
+    {
+        return $this->belongsTo(Tower::class);
+    }
+
+    public function guild()
+    {
+        return $this->belongsTo(Guild::class);
+    }
+
     public function subscribers() {
         return $this->belongsToMany('App\User', 'board_subscriptions')
                     ->using('App\BoardSubscription')
