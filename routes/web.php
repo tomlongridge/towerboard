@@ -19,7 +19,7 @@ Route::get('/', function () {
 
 Route::resource('/boards', 'BoardController')->middleware('verified');
 Route::resource('/api/guilds', 'GuildController')->middleware('verified');
-
+Route::resource('/api/towers', 'TowerController')->middleware('verified');
 
 Route::resource('/boards/{board}/notices', 'NoticeController')->middleware('verified');
 Route::get('/boards/{board}/notices/{notice}/mail', 'NoticeController@mail')->middleware('verified');

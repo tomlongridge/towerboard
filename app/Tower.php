@@ -14,8 +14,18 @@ class Tower extends Model
     public function getName()
     {
         return $this->attributes['town'] .
-               ($this->attributes['area'] ? ' (' . $this->attributes['area'] . ')' : '') .
                ', ' . $this->attributes['county'] .
-               ', ' . $this->attributes['country'];
+               ' (' . $this->attributes['country'] . ')' .
+               ', ' . $this->attributes['dedication'] .
+               ($this->attributes['area'] ? ', ' . $this->attributes['area'] : '');
+    }
+
+    public function getNameHTML()
+    {
+        return '<strong>' . $this->attributes['town'] . '</strong>' .
+               ', ' . $this->attributes['county'] .
+               ' (' . $this->attributes['country'] . ')' .
+               ', ' . $this->attributes['dedication'] .
+               ($this->attributes['area'] ? ', ' . $this->attributes['area'] : '');
     }
 }

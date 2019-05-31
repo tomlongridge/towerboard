@@ -14,12 +14,7 @@
             </div>
             <div class="row">
                 <label for="name">Tower</label>
-                <select class="form-control" id="tower" name="tower_id">
-                        <option value="">Unattached</option>
-                    @foreach (cache('towers') as $tower)
-                        <option value="{{ $tower->id }}">{{ $tower->getName() }}</option>
-                    @endforeach
-                </select>
+                <select id="tower" class="tb-dropdown"></select>
             </div>
             <div class="row">
                 <input type="submit" class="btn btn-primary" id="menu-toggle" value="Create" />
@@ -34,5 +29,44 @@
         @endforeach
         </ul>
     @endif
+
+@endsection
+
+@section('pagescripts')
+
+<script>
+        var $select = $('#tower').selectize({
+            preload: true,
+            valueField: 'id',
+            labelField: 'namehtml',
+            searchField: ['name'],
+            sortField: ['country', 'county', 'town', 'area'],
+            create: false,
+            placeholder: 'Select/Type tower name',
+            selectOnTab: true,
+            load: function(query, callback) {
+                // if (!query.length) return callback();
+                $.ajax({
+                    url: 'http://localhost:3000/api/towers',
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function(e) {
+                        callback();
+                    },
+                    success: function(res) {
+                        callback(res);
+                    }
+                });
+            },
+            render: {
+                option: function(item, escape) {
+                    return '<div><span class="tb-dropdown-option">' + item.namehtml + '</span></div>';
+                },
+                item: function(item, escape) {
+                    return '<div><span class="tb-dropdown-item">' + item.namehtml + '</span></div>';
+                }
+            }
+        });
+    </script>
 
 @endsection

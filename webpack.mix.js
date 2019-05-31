@@ -12,9 +12,10 @@ const mix = require('laravel-mix');
  */
 
 mix.js('resources/js/app.js', 'public/js')
-        .extract(['vue', 'bootstrap']);
+        .extract(['vue', 'bootstrap', 'selectize']);
 
-mix.sass('resources/sass/app.scss', 'public/css');
+mix.sass('resources/sass/app.scss', 'public/css/app.css');
+mix.less('node_modules/selectize/dist/less/selectize.less', 'public/css/vendor.css');
 
 if (mix.inProduction()) {
     mix.version();
