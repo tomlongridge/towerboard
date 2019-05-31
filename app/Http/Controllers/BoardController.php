@@ -99,7 +99,8 @@ class BoardController extends Controller
     {
         return $request->validate([
             'name' => 'required',
-            'tower_id' => 'nullable'
+            'tower_id' => 'nullable',
+            'guild_id' => 'nullable'
         ]);
     }
 }

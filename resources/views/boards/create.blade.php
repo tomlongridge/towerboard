@@ -17,6 +17,10 @@
                 <select id="tower" name="tower_id" class="tb-dropdown"></select>
             </div>
             <div class="row">
+                <label for="name">Guild</label>
+                <select id="guild" name="guild_id" class="tb-dropdown"></select>
+            </div>
+            <div class="row">
                 <input type="submit" class="btn btn-primary" id="menu-toggle" value="Create" />
             </div>
         </form>
@@ -35,7 +39,7 @@
 @section('pagescripts')
 
 <script>
-        var $select = $('#tower').selectize({
+        $('#tower').selectize({
             preload: true,
             valueField: 'id',
             labelField: 'namehtml',
@@ -63,6 +67,38 @@
                 },
                 item: function(item, escape) {
                     return '<div><span class="tb-dropdown-item">' + item.namehtml + '</span></div>';
+                }
+            }
+        });
+
+        $('#guild').selectize({
+            preload: true,
+            valueField: 'id',
+            labelField: 'name',
+            searchField: ['name'],
+            sortField: ['name'],
+            create: false,
+            placeholder: 'Select/Type guild name',
+            selectOnTab: true,
+            load: function(query, callback) {
+                $.ajax({
+                    url: "{{ route('guilds.index') }}",
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function(e) {
+                        callback();
+                    },
+                    success: function(res) {
+                        callback(res);
+                    }
+                });
+            },
+            render: {
+                option: function(item, escape) {
+                    return '<div><span class="tb-dropdown-option">' + item.name + '</span></div>';
+                },
+                item: function(item, escape) {
+                    return '<div><span class="tb-dropdown-item">' + item.name + '</span></div>';
                 }
             }
         });

@@ -6,6 +6,9 @@
     @if($board->tower)
         <p>{!! $board->tower->getNameHTML() !!}</p>
     @endif
+    @if($board->guild)
+        <p>{{ $board->guild->name }}</p>
+    @endif
 
     <p>
         This board is managed by: {{ $board->owner->name }}.
