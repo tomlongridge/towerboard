@@ -17,16 +17,18 @@ class TowersTableSeeder extends Seeder
             'area' => 'Bathwick',
             'town' => 'Bath',
             'county' => 'Somerset',
-            'country' => 'England'
-        ]);
+            'country' => 'England',
+            'num_bells' => 10,
+            'weight' => '18-3-20'
+            ]);
 
-        DB::table('towers')->insert([
+            DB::table('towers')->insert([
             'dove_id' => 'ABERAVON',
             'dedication' => 'S Mary',
-            'area' => 'Port Talbot',
             'town' => 'Aberavon',
             'county' => 'West Glamorgan',
-            'country' => 'Wales'
+            'country' => 'Wales',
+            'num_bells' => 6
         ]);
     }
 }

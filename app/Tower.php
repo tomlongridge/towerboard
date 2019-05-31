@@ -17,7 +17,9 @@ class Tower extends Model
                ', ' . $this->attributes['county'] .
                ' (' . $this->attributes['country'] . ')' .
                ', ' . $this->attributes['dedication'] .
-               ($this->attributes['area'] ? ', ' . $this->attributes['area'] : '');
+               ($this->attributes['area'] ? ', ' . $this->attributes['area'] : '') .
+               ', ' . $this->attributes['num_bells'] .
+               ($this->attributes['weight'] ? ', ' . $this->attributes['weight'] : '');
     }
 
     public function getNameHTML()
@@ -26,6 +28,8 @@ class Tower extends Model
                ', ' . $this->attributes['county'] .
                ' (' . $this->attributes['country'] . ')' .
                ', ' . $this->attributes['dedication'] .
-               ($this->attributes['area'] ? ', ' . $this->attributes['area'] : '');
+               ($this->attributes['area'] ? ', ' . $this->attributes['area'] : '') .
+               ', <strong>' . $this->attributes['num_bells'] . '</strong>' .
+               ($this->attributes['weight'] ? ', ' . $this->attributes['weight'] : '');
     }
 }

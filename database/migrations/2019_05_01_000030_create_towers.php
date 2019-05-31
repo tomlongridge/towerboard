@@ -21,6 +21,8 @@ class CreateTowers extends Migration
             $table->string('town');
             $table->string('county');
             $table->string('country');
+            $table->smallInteger('num_bells');
+            $table->string('weight')->nullable();
         });
     }
 

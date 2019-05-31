@@ -14,7 +14,7 @@
             </div>
             <div class="row">
                 <label for="name">Tower</label>
-                <select id="tower" class="tb-dropdown"></select>
+                <select id="tower" name="tower_id" class="tb-dropdown"></select>
             </div>
             <div class="row">
                 <input type="submit" class="btn btn-primary" id="menu-toggle" value="Create" />
@@ -45,9 +45,8 @@
             placeholder: 'Select/Type tower name',
             selectOnTab: true,
             load: function(query, callback) {
-                // if (!query.length) return callback();
                 $.ajax({
-                    url: 'http://localhost:3000/api/towers',
+                    url: "{{ route('towers.index') }}",
                     type: 'GET',
                     dataType: 'json',
                     error: function(e) {
