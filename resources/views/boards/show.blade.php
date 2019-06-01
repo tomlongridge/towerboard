@@ -5,8 +5,17 @@
     <h1 class="mt-4">{{ $board->name }}</h1>
     @if($board->tower)
         <p>{!! $board->tower->getNameHTML() !!}</p>
-    @endif
-    @if($board->guild)
+        @if($board->guild)
+            <p>
+                Affiliated to:
+                @if($board->guild->boards())
+                    <a href="{{ route('boards.show', ['board' => $board->guild->boards()->first()]) }}">{{ $board->guild->name }}</a>
+                @else
+                    {{ $board->guild->name }}
+                @endif
+            </p>
+        @endif
+    @elseif($board->guild)
         <p>{{ $board->guild->name }}</p>
     @endif
 

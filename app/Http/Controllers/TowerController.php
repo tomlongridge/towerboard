@@ -22,7 +22,7 @@ class TowerController extends Controller
         } else {
             $towers = Cache::remember('towers', (60 * 24), function () {
                 $dbTowers = Tower::all();
-                $dbTowers = $dbTowers->map(function($tower) {
+                $dbTowers = $dbTowers->map(function ($tower) {
                     $tower['name'] = $tower->getName();
                     $tower['namehtml'] = $tower->getNameHTML();
                     return $tower;

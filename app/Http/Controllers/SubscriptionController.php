@@ -32,5 +32,4 @@ class SubscriptionController extends Controller
         $board->subscribers()->detach(Auth::user()->id);
         return redirect(route('boards.show', [ 'board' => $board ]));
     }
-
 }

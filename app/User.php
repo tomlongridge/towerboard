@@ -37,7 +37,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
     ];
 
-    public function subscriptions() {
+    public function subscriptions()
+    {
         return $this->belongsToMany('App\Board', 'board_subscriptions')
                     ->using('App\BoardSubscription')
                     ->withTimestamps();
@@ -48,7 +49,8 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->subscriptions()->where('boards.id', $this->attributes['id'])->exists();
     }
 
-    public function getNameAttribute() {
+    public function getNameAttribute()
+    {
         return $this->attributes['forename'] . ' ' .
                $this->attributes['middle_initials'] . ' ' . // TODO: guard for empty
                $this->attributes['surname'];

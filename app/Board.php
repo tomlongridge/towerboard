@@ -5,7 +5,6 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-
 class Board extends Model
 {
     use SoftDeletes;
@@ -16,7 +15,7 @@ class Board extends Model
     {
         parent::boot();
 
-        static::deleting(function($board) {
+        static::deleting(function ($board) {
             // Remove all associated notices
             $board->notices()->delete();
         });
@@ -47,7 +46,8 @@ class Board extends Model
         return $this->belongsTo(Guild::class);
     }
 
-    public function subscribers() {
+    public function subscribers()
+    {
         return $this->belongsToMany('App\User', 'board_subscriptions')
                     ->using('App\BoardSubscription')
                     ->withTimestamps();

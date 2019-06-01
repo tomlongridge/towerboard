@@ -34,5 +34,4 @@ class GuildController extends Controller
 
         return response()->json($guilds);
     }
-
 }
