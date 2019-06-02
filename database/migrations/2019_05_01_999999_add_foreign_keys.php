@@ -22,9 +22,14 @@ class AddForeignKeys extends Migration
             $table->foreign('board_id')->references('id')->on('boards');
         });
 
+        Schema::table('board_subscriptions', function (Blueprint $table) {
+            $table->foreign('board_id')->references('id')->on('boards')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+        });
 
-        Schema::table('guilds', function (Blueprint $table) {
-            $table->foreign('affiliated_to')->references('id')->on('guilds');
+        Schema::table('board_affiliates', function (Blueprint $table) {
+            $table->foreign('board_id')->references('id')->on('boards')->onDelete('cascade');
+            $table->foreign('affiliate_id')->references('id')->on('boards')->onDelete('cascade');
         });
     }
 
@@ -35,9 +40,20 @@ class AddForeignKeys extends Migration
      */
     public function down()
     {
+        Schema::table('board_affiliates', function (Blueprint $table) {
+            $table->dropForeign(['board_id']);
+            $table->dropForeign(['affiliate_id']);
+        });
+
+        Schema::table('board_subscriptions', function (Blueprint $table) {
+            $table->dropForeign(['board_id']);
+            $table->dropForeign(['user_id']);
+        });
+
         Schema::table('notices', function (Blueprint $table) {
             $table->dropForeign(['board_id']);
         });
+
         Schema::table('boards', function (Blueprint $table) {
             $table->dropForeign(['tower_id']);
             $table->dropForeign(['owner_id']);

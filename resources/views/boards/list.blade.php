@@ -5,14 +5,35 @@
     <div id="boards-list">
 
         <h2>Search</h2>
-        <input class="search" placeholder="search" />
-        <input type="radio" name="type" id="type-tower" value="tower" /> Tower
-        <input type="radio" name="type" id="type-guild" value="guild" /> Guild
 
+        <input class="search" placeholder="search" />
+
+        <ul>
+            <li>
+                <input type="radio" name="type" id="board-type-all" value="*" checked />
+                <label for="board-type-all">All</label>
+            </li>
+            <li>
+                <input type="radio" name="type" id="board-type-towers" value="{{ \App\Enums\BoardType::getKey(\App\Enums\BoardType::TOWER) }}" />
+                <label for="board-type-towers">Towers</label>
+            </li>
+            <li>
+                <input type="radio" name="type" id="board-type-guilds" value="{{ \App\Enums\BoardType::getKey(\App\Enums\BoardType::GUILD) }}" />
+                <label for="board-type-guilds">Guilds/Associations</label>
+            </li>
+            <li>
+                <input type="radio" name="type" id="board-type-branches" value="{{ \App\Enums\BoardType::getKey(\App\Enums\BoardType::BRANCH) }}" />
+                <label for="board-type-branches">Branches/Districts</label>
+            </li>
+            <li>
+                <input type="radio" name="type" id="board-type-other" value="" />
+                <label for="board-type-other">Other</label>
+            </li>
+        </ul>
         <h2>Boards</h2>
         <ul class="list">
         @foreach($boards as $board)
-            <li data-type="{{ $board->tower ? 'tower' : 'guild' }}">
+            <li data-type="{{ \App\Enums\BoardType::getKey($board->type) }}">
                 <span class="tower-item">
                 @if($board->tower)
                     @include('macros.tower', ['tower' => $board->tower, 'url' => route('boards.show', ['board' => $board->id])])
@@ -42,10 +63,13 @@
         };
         var boardList = new List('boards-list', options);
         $('input[name=type]').change(function() {
-            $boardType = $('input[name=type]:checked').val();
+            var boardType = $('input[name=type]:checked').val();
             boardList.filter(function(item) {
-                console.log(item.values().type + " = " + $boardType);
-                return $boardType === item.values().type;
+                if (boardType === "*") {
+                    return true;
+                } else {
+                    return (boardType === '' ? null : boardType) === item.values().type;
+                }
             });
         });
     </script>

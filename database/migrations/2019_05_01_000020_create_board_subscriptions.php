@@ -15,9 +15,7 @@ class CreateBoardSubscriptions extends Migration
     {
         Schema::create('board_subscriptions', function (Blueprint $table) {
             $table->unsignedBigInteger('board_id');
-            $table->foreign('board_id')->references('id')->on('boards')->onDelete('cascade');
             $table->unsignedBigInteger('user_id');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });
     }

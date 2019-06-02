@@ -41,15 +41,24 @@ class Board extends Model
         return $this->belongsTo(Tower::class);
     }
 
-    public function guild()
-    {
-        return $this->belongsTo(Guild::class);
-    }
-
     public function subscribers()
     {
         return $this->belongsToMany('App\User', 'board_subscriptions')
                     ->using('App\BoardSubscription')
+                    ->withTimestamps();
+    }
+
+    public function affiliates()
+    {
+        return $this->belongsToMany('App\Board', 'board_affiliates', 'affiliate_id', 'board_id')
+                    ->using('App\BoardAffiliate')
+                    ->withTimestamps();
+    }
+
+    public function affiliatedTo()
+    {
+        return $this->belongsToMany('App\Board', 'board_affiliates', 'board_id', 'affiliate_id')
+                    ->using('App\BoardAffiliate')
                     ->withTimestamps();
     }
 }

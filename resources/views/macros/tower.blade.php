@@ -1,4 +1,4 @@
-@if($url)
+@if(isset($url))
     <a href="{{ $url }}"><strong>{{ $tower->town }}</strong></a>,
 @else
     {{ $tower->town }},

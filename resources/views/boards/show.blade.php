@@ -3,21 +3,18 @@
 @section('content')
 
     @if($board->tower)
-        <p>{!! $board->tower->getNameHTML() !!}</p>
-        @if($board->guild)
-            <p>
-                Affiliated to:
-                @if($board->guild->boards())
-                    <a href="{{ route('boards.show', ['board' => $board->guild->boards()->first()]) }}">{{ $board->guild->name }}</a>
-                @else
-                    {{ $board->guild->name }}
-                @endif
-            </p>
-        @endif
-    @elseif($board->guild)
-        <p>{{ $board->guild->name }}</p>
+        <p>@include('macros.tower', ['tower' => $board->tower])</p>
     @endif
-
+    @if(!$board->affiliatedTo()->get()->isEmpty())
+        <p>
+            Affiliated to:
+            <ul>
+            @foreach($board->affiliatedTo()->get() as $affiliate)
+                <li><a href="{{ route('boards.show', ['board' => $affiliate->id]) }}">{{ $affiliate->name }}</a></li>
+            @endforeach
+            </ul>
+        </p>
+    @endif
     <p>
         This board is managed by: {{ $board->owner->name }}.
     </p>
@@ -80,5 +77,19 @@
             </form>
         </div>
     @endcan
+
+    <hr />
+
+    @if(!$board->affiliates()->get()->isEmpty())
+        <h2>Affiliated Boards</h2>
+        <p>
+            Affiliates:
+            <ul>
+            @foreach($board->affiliates()->get() as $affiliate)
+                <li><a href="{{ route('boards.show', ['board' => $affiliate->id]) }}">{{ $affiliate->name }}</a></li>
+            @endforeach
+            </ul>
+        </p>
+    @endif
 
 @endsection

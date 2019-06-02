@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateGuilds extends Migration
+class CreateBoardAffiliates extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,10 @@ class CreateGuilds extends Migration
      */
     public function up()
     {
-        Schema::create('guilds', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('name');
-            $table->unsignedBigInteger('affiliated_to')->nullable();
+        Schema::create('board_affiliates', function (Blueprint $table) {
+            $table->unsignedBigInteger('board_id');
+            $table->unsignedBigInteger('affiliate_id');
+            $table->timestamps();
         });
     }
 
@@ -27,6 +27,6 @@ class CreateGuilds extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('guilds');
+        Schema::dropIfExists('board_affiliates');
     }
 }

@@ -18,7 +18,6 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-Route::resource('/api/guilds', 'GuildController');
 Route::resource('/api/towers', 'TowerController');
 
 Route::resource('/boards', 'BoardController');
