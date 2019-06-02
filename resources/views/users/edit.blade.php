@@ -1,8 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.app', ['title' => 'Account Details'])
 
 @section('content')
-
-    <h1 class="mt-4">Account Details</h1>
 
     <div class="container">
         <form method="POST" action="{{ route('accounts.update') }}">

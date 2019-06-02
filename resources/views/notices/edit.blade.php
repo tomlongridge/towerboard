@@ -1,8 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.app', ['title' => 'Edit Notice'])
 
 @section('content')
-
-    <h1 class="mt-4">Edit Notice</h1>
 
     <div class="container">
         <form method="POST" action="{{ route('notices.update', [ 'board' => $notice->board->id, 'notice' => $notice->id ]) }}">

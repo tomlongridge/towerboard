@@ -12,7 +12,7 @@ const mix = require('laravel-mix');
  */
 
 mix.js('resources/js/app.js', 'public/js')
-        .extract(['vue', 'bootstrap', 'selectize']);
+        .extract(['vue', 'bootstrap', 'selectize', 'list.js']);
 
 mix.sass('resources/sass/app.scss', 'public/css/app.css');
 mix.less('node_modules/selectize/dist/less/selectize.less', 'public/css/vendor.css');

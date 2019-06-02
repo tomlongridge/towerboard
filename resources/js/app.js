@@ -6,6 +6,7 @@
 
 require('./bootstrap');
 require('selectize');
+window.List = require('list.js');
 
 window.Vue = require('vue');
 

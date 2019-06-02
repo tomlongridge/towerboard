@@ -1,8 +1,7 @@
-@extends('layouts.app')
+@extends('layouts.app', ['title' => $board->name])
 
 @section('content')
 
-    <h1 class="mt-4">{{ $board->name }}</h1>
     @if($board->tower)
         <p>{!! $board->tower->getNameHTML() !!}</p>
         @if($board->guild)

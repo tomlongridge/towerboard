@@ -1,8 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.app', ['title' => 'Create Board'])
 
 @section('content')
-
-    <h1 class="mt-4">Create Board</h1>
 
     <div class="container">
         <form method="POST" action="/boards">

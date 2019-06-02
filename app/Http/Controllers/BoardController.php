@@ -20,7 +20,7 @@ class BoardController extends Controller
      */
     public function index()
     {
-        $boards = Board::all();
+        $boards = Board::orderBy('name')->get();
         return view('boards.list', compact('boards'));
     }
 

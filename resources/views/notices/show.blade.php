@@ -1,8 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.app', ['title' => $notice->title])
 
 @section('content')
-
-    <h1 class="mt-4">{{ $notice->title }}</h1>
 
     <p>{{ $notice->body }}</p>
 

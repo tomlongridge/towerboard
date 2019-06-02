@@ -6,7 +6,7 @@
 
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name') }}</title>
+        <title>{{ config('app.name') }}: {{ isset($title) ? $title : '' }}</title>
 
         <link rel="stylesheet" href="{{ mix('/css/app.css') }}">
         <link rel="stylesheet" href="{{ mix('/css/vendor.css') }}">
@@ -18,10 +18,10 @@
 
             <!-- Sidebar -->
             <div class="bg-light border-right" id="sidebar-wrapper">
-            <div class="sidebar-heading"><a href="/">Towerboard</a></div>
-            <div class="list-group list-group-flush">
-                <a href="/boards" class="list-group-item list-group-item-action bg-light">Boards</a>
-            </div>
+                <div class="sidebar-heading"><a href="/">Towerboard</a></div>
+                <div class="list-group list-group-flush">
+                    <a href="/boards" class="list-group-item list-group-item-action bg-light">Boards</a>
+                </div>
             </div>
             <!-- /#sidebar-wrapper -->
 
@@ -29,6 +29,9 @@
             <div id="page-content-wrapper">
 
                 <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+
+                    <h1 class="mt-4">{{ isset($title) ? $title : '' }}</h1>
+
                     <div class="collapse navbar-collapse" id="navbarSupportedContent">
                         <ul class="navbar-nav ml-auto mt-2 mt-lg-0">
                         @guest
