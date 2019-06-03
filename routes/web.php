@@ -21,6 +21,9 @@ Route::get('/', function () {
 Route::resource('/api/towers', 'TowerController');
 
 Route::resource('/boards', 'BoardController');
+Route::get('/boards/{board}/committee', 'BoardController@committee')->name('boards.committee');
+Route::get('/boards/{board}/details', 'BoardController@details')->name('boards.details');
+Route::get('/boards/{board}/contact', 'BoardController@contact')->name('boards.contact');
 Route::resource('/boards/{board}/notices', 'NoticeController');
 Route::get('/boards/{board}/notices/{notice}/mail', 'NoticeController@mail');
 

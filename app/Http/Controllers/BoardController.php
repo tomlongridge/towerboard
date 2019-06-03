@@ -31,7 +31,7 @@ class BoardController extends Controller
      */
     public function create()
     {
-        return view('boards.create');
+        return view('boards.edit');
     }
 
     /**
@@ -42,8 +42,9 @@ class BoardController extends Controller
      */
     public function store(Request $request)
     {
-        Board::create($this->validateFields($request) + ['owner_id' => auth()->id()]);
-        return redirect(route('boards.index'));
+        $board = Board::create($this->validateFields($request) + ['owner_id' => auth()->id()]);
+        $board->subscribe(auth()->user());
+        return redirect(route('boards.show', ['board' => $board->id]));
     }
 
     /**
@@ -55,6 +56,21 @@ class BoardController extends Controller
     public function show(Board $board)
     {
         return view('boards.show', compact('board'));
+    }
+
+    public function committee(Board $board)
+    {
+        return view('boards.committee', compact('board'));
+    }
+
+    public function details(Board $board)
+    {
+        return view('boards.details', compact('board'));
+    }
+
+    public function contact(Board $board)
+    {
+        return view('boards.contact', compact('board'));
     }
 
     /**
@@ -79,7 +95,7 @@ class BoardController extends Controller
     {
         $board->update($this->validateFields($request));
 
-        return redirect(route('boards.show', ['board' => $board->id]));
+        return redirect(route('boards.details', ['board' => $board->id]));
     }
 
     /**
@@ -100,6 +116,7 @@ class BoardController extends Controller
         return $request->validate([
             'name' => 'required',
             'tower_id' => 'nullable',
+            'website_url' => 'nullable',
         ]);
     }
 }

@@ -20,6 +20,7 @@ class CreateBoard extends Migration
             $table->unsignedTinyInteger('type')->nullable();
             $table->unsignedBigInteger('owner_id'); // FK->users
             $table->unsignedBigInteger('tower_id')->nullable(); // FK->towers
+            $table->string('website_url')->nullable();
 
             $table->softDeletes();
         });

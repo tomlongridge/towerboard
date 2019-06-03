@@ -22,7 +22,7 @@ class NoticeController extends Controller
      */
     public function index(Board $board)
     {
-        return redirect("/boards/$board->id");
+        return redirect(route("boards.show", ["board" => $board->id]));
     }
 
     /**
@@ -30,9 +30,9 @@ class NoticeController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create(Board $board)
     {
-        return redirect("/boards/$board->id");
+        return redirect(route("boards.show", ["board" => $board->id]));
     }
 
     /**
@@ -95,7 +95,7 @@ class NoticeController extends Controller
     {
         $notice->delete();
 
-        return redirect("/boards/$board->id");
+        return redirect(route("boards.show", ["board" => $board->id]));
     }
 
     public function mail(Board $board, Notice $notice)

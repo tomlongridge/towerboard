@@ -16,7 +16,7 @@ class TowerController extends Controller
      */
     public function index(Request $request)
     {
-        $towers;
+        $towers = collect();
         if (Cache::has('towers')) {
             $towers = Cache::get('towers');
         } else {
@@ -24,7 +24,6 @@ class TowerController extends Controller
                 $dbTowers = Tower::all();
                 $dbTowers = $dbTowers->map(function ($tower) {
                     $tower['name'] = $tower->getName();
-                    $tower['namehtml'] = $tower->getNameHTML();
                     return $tower;
                 });
                 return $dbTowers;

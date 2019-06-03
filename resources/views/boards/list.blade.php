@@ -6,7 +6,9 @@
 
         <h2>Search</h2>
 
-        <input class="search" placeholder="search" />
+        <p>
+            <input class="search" class="form-control" style="width: 300px" placeholder="Tower, guild, branch name..." />
+        </p>
 
         <ul>
             <li>
@@ -30,17 +32,17 @@
                 <label for="board-type-other">Other</label>
             </li>
         </ul>
-        <h2>Boards</h2>
+
+        <hr />
+
         <ul class="list">
         @foreach($boards as $board)
             <li data-type="{{ \App\Enums\BoardType::getKey($board->type) }}">
                 <span class="tower-item">
                 @if($board->tower)
                     @include('macros.tower', ['tower' => $board->tower, 'url' => route('boards.show', ['board' => $board->id])])
-                @elseif($board->guild)
-                    <a href="/boards/{{ $board->id }}">{{ $board->guild->name }}</a>
-                    @else
-                    <a href="/boards/{{ $board->id }}">{{ $board->name }}</a>
+                @else
+                    <a href="{{ route("boards.show", ["board" => $board->id]) }}">{{ $board->name }}</a>
                 @endif
                 </span>
             </li>
@@ -50,7 +52,7 @@
     </div>
 
     @auth
-        <a class="btn btn-primary" id="menu-toggle" href="/boards/create">Create</a>
+        <a class="btn btn-primary" id="menu-toggle" href="{{ route('boards.create') }}">Create</a>
     @endauth
 
 @endsection

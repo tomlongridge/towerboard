@@ -2,6 +2,8 @@
 
 namespace App;
 
+use App\User;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -16,14 +18,29 @@ class Board extends Model
         parent::boot();
 
         static::deleting(function ($board) {
-            // Remove all associated notices
+            // Remove all associated notices and subscriptions
             $board->notices()->delete();
+            BoardAffiliate::where('board_id', $board->id)->delete();
+            BoardSubscription::where('board_id', $board->id)->delete();
         });
     }
 
     public function addNotice(array $fields)
     {
         return Notice::create(array_merge($fields, ['board_id' => $this->id]));
+    }
+
+    public function subscribe(User $user)
+    {
+        BoardSubscription::create([
+            'user_id' => $user->id,
+            'board_id' => $this->id
+        ]);
+    }
+
+    public function isSubscribed(User $user)
+    {
+        return $this->subscribers()->where('id', $user->id)->exists();
     }
 
     public function notices()

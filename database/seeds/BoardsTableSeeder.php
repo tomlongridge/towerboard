@@ -40,6 +40,7 @@ class BoardsTableSeeder extends Seeder{
         $tower = Tower::where('area', '=', 'Bathwick')->first();
         $towerBoardId = DB::table('boards')->insertGetId([
             'name' => 'Bathwick',
+            'website_url' => 'http://bathwick.brinkster.net',
             'owner_id' => $user->id,
             'tower_id' => $tower->id,
             'type' => BoardType::TOWER,

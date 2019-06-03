@@ -20,7 +20,9 @@
             <div class="bg-light border-right" id="sidebar-wrapper">
                 <div class="sidebar-heading"><a href="/">Towerboard</a></div>
                 <div class="list-group list-group-flush">
-                    <a href="/boards" class="list-group-item list-group-item-action bg-light">Boards</a>
+                    <a href="{{ route('boards.index') }}" class="list-group-item list-group-item-action bg-light">Find Boards</a>
+                    <a href="#" class="list-group-item list-group-item-action bg-light">My Boards</a>
+                    <a href="#" class="list-group-item list-group-item-action bg-light">My Notices</a>
                 </div>
             </div>
             <!-- /#sidebar-wrapper -->

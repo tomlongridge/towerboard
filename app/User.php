@@ -44,11 +44,6 @@ class User extends Authenticatable implements MustVerifyEmail
                     ->withTimestamps();
     }
 
-    public function isSubscribed()
-    {
-        return $this->subscriptions()->where('boards.id', $this->attributes['id'])->exists();
-    }
-
     public function getNameAttribute()
     {
         return $this->attributes['forename'] . ' ' .

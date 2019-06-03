@@ -1,52 +1,7 @@
-@extends('layouts.app', ['title' => $board->name])
+@extends('boards.layout')
 
-@section('content')
+@section('subcontent')
 
-    @if($board->tower)
-        <p>@include('macros.tower', ['tower' => $board->tower])</p>
-    @endif
-    @if(!$board->affiliatedTo()->get()->isEmpty())
-        <p>
-            Affiliated to:
-            <ul>
-            @foreach($board->affiliatedTo()->get() as $affiliate)
-                <li><a href="{{ route('boards.show', ['board' => $affiliate->id]) }}">{{ $affiliate->name }}</a></li>
-            @endforeach
-            </ul>
-        </p>
-    @endif
-    <p>
-        This board is managed by: {{ $board->owner->name }}.
-    </p>
-
-    @can('update', $board)
-        <a class="btn btn-primary" href="{{ route('boards.edit',[ 'board' => $board->id ]) }}">Edit</a>
-
-        <form method="POST" action="{{ route('boards.destroy', [ 'board' => $board->id ]) }}" style="display: inline">
-            @method("DELETE")
-            @csrf
-            <input type="submit" class="btn btn-primary" value="Delete" />
-        </form>
-    @endcan
-
-    @auth
-        @if (!Auth::user()->isSubscribed())
-            <form method="POST" action="{{ route('subscriptions.store', [ 'board' => $board->id ]) }}" style="display: inline">
-                @csrf
-                <input type="submit" class="btn btn-primary" value="Subscribe" />
-            </form>
-        @else
-            <form method="POST" action="{{ route('subscriptions.destroy', [ 'board' => $board->id ]) }}" style="display: inline">
-                @csrf
-                @method("DELETE")
-                <input type="submit" class="btn btn-primary" value="Unsubscribe" />
-            </form>
-        @endif
-    @endauth
-
-    <hr />
-
-    <h2>Notices</h2>
     @if(!$board->notices->isEmpty())
         <ul>
         @foreach ($board->notices as $notice)
@@ -57,10 +12,12 @@
         <p>There are no notices on this board.</p>
     @endif
 
+    <hr />
+
     @can('add-notice', $board)
         <h3>Add Notice</h3>
         <div class="container">
-            <form method="POST" action="/boards/{{ $board->id }}/notices">
+            <form method="POST" action="{{ route('notices.store', ['board' => $board->id]) }}">
                 @csrf
 
                 <div class="row">
@@ -77,19 +34,5 @@
             </form>
         </div>
     @endcan
-
-    <hr />
-
-    @if(!$board->affiliates()->get()->isEmpty())
-        <h2>Affiliated Boards</h2>
-        <p>
-            Affiliates:
-            <ul>
-            @foreach($board->affiliates()->get() as $affiliate)
-                <li><a href="{{ route('boards.show', ['board' => $affiliate->id]) }}">{{ $affiliate->name }}</a></li>
-            @endforeach
-            </ul>
-        </p>
-    @endif
 
 @endsection

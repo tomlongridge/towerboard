@@ -86,3 +86,27 @@ body {
         color: darkgreen;
     }
 }
+
+.board-nav {
+    background-color: lightgray;
+    text-align: center;
+    margin-bottom: 20px;
+    padding-top: 0px;
+
+    a {
+        display: block;
+        height: 50px;
+        padding: 12px;
+        font-weight: bolder;
+        color: darkgreen;
+        font-size: 14pt;
+    }
+
+    .selected {
+        background-color: darkgray;
+    }
+}
+
+.subscribe {
+    margin-bottom: 10px;
+}
