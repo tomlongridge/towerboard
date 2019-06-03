@@ -20,6 +20,7 @@ Route::get('/', function () {
 
 Route::resource('/api/towers', 'TowerController');
 
+Route::get('/boards/search', 'BoardController@search')->name('boards.search');
 Route::resource('/boards', 'BoardController');
 Route::get('/boards/{board}/committee', 'BoardController@committee')->name('boards.committee');
 Route::get('/boards/{board}/details', 'BoardController@details')->name('boards.details');

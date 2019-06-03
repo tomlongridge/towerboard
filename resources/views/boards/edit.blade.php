@@ -18,7 +18,11 @@
             </div>
             <div class="row">
                 <label for="name">Tower</label>
-                <select id="tower" name="tower_id" class="tb-dropdown"></select>
+                <select id="tower" name="tower_id" class="tb-dropdown">
+                    <option value="{{ $board->tower_id }}" selected="selected">
+                        @include('macros.tower', ['tower' => $board->tower])
+                    </option>
+                </select>
             </div>
             <div class="row">
                 <label for="name">Website</label>
@@ -73,7 +77,7 @@
                 item: function(item, escape) {
                     return '<div><span class="tb-dropdown-item">' + item.name + '</span></div>';
                 }
-            }
+            },
         });
 
     </script>

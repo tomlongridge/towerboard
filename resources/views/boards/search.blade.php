@@ -10,7 +10,8 @@
             <input class="search" class="form-control" style="width: 300px" placeholder="Tower, guild, branch name..." />
         </p>
 
-        <ul>
+        <h3>Board Types</h3>
+        <ul class="radio-list">
             <li>
                 <input type="radio" name="type" id="board-type-all" value="*" checked />
                 <label for="board-type-all">All</label>
@@ -39,11 +40,14 @@
         @foreach($boards as $board)
             <li data-type="{{ \App\Enums\BoardType::getKey($board->type) }}">
                 <span class="tower-item">
-                @if($board->tower)
-                    @include('macros.tower', ['tower' => $board->tower, 'url' => route('boards.show', ['board' => $board->id])])
-                @else
-                    <a href="{{ route("boards.show", ["board" => $board->id]) }}">{{ $board->name }}</a>
-                @endif
+                    @if($board->tower)
+                        @include('macros.tower', ['tower' => $board->tower, 'url' => route('boards.show', ['board' => $board->id])])
+                    @else
+                        <a href="{{ route("boards.show", ["board" => $board->id]) }}">{{ $board->name }}</a>
+                    @endif
+                    @if($board->isSubscribed(auth()->user()))
+                        <i class="material-icons">star</i>
+                    @endif
                 </span>
             </li>
         @endforeach

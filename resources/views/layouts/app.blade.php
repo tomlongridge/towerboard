@@ -8,8 +8,8 @@
 
         <title>{{ config('app.name') }}: {{ isset($title) ? $title : '' }}</title>
 
-        <link rel="stylesheet" href="{{ mix('/css/app.css') }}">
         <link rel="stylesheet" href="{{ mix('/css/vendor.css') }}">
+        <link rel="stylesheet" href="{{ mix('/css/app.css') }}">
 
     </head>
     <body>
@@ -20,8 +20,8 @@
             <div class="bg-light border-right" id="sidebar-wrapper">
                 <div class="sidebar-heading"><a href="/">Towerboard</a></div>
                 <div class="list-group list-group-flush">
-                    <a href="{{ route('boards.index') }}" class="list-group-item list-group-item-action bg-light">Find Boards</a>
-                    <a href="#" class="list-group-item list-group-item-action bg-light">My Boards</a>
+                    <a href="{{ route('boards.search') }}" class="list-group-item list-group-item-action bg-light">Find Boards</a>
+                    <a href="{{ route('boards.index') }}" class="list-group-item list-group-item-action bg-light">My Boards</a>
                     <a href="#" class="list-group-item list-group-item-action bg-light">My Notices</a>
                 </div>
             </div>

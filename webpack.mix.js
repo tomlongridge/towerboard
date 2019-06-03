@@ -16,6 +16,7 @@ mix.js('resources/js/app.js', 'public/js')
 
 mix.sass('resources/sass/app.scss', 'public/css/app.css');
 mix.less('node_modules/selectize/dist/less/selectize.less', 'public/css/vendor.css');
+mix.combine(['public/css/vendor.css', 'node_modules/bootstrap/dist/css/bootstrap.min.css'], 'public/css/vendor.css');
 
 if (mix.inProduction()) {
     mix.version();

@@ -11,20 +11,13 @@
             </div>
             <div class="col" style="text-align: right">
 
-                @auth
-                    @if (!$board->isSubscribed(auth()->user()))
-                        <form method="POST" action="{{ route('subscriptions.store', [ 'board' => $board->id ]) }}" style="display: inline">
-                            @csrf
-                            <input type="submit" class="btn btn-primary" value="Subscribe" />
-                        </form>
-                    @else
-                        <form method="POST" action="{{ route('subscriptions.destroy', [ 'board' => $board->id ]) }}" style="display: inline">
-                            @csrf
-                            @method("DELETE")
-                            <input type="submit" class="btn btn-primary" value="Unsubscribe" />
-                        </form>
-                    @endif
-                @endauth
+                @section('subscribe')
+                    <input type="submit" class="btn btn-primary" value="Subscribe" />
+                @endsection
+                @section('unsubscribe')
+                    <input type="submit" class="btn btn-primary" value="Unsubscribe" />
+                @endsection
+                @include('macros.subscribe', ['board' => $board])
 
             </div>
         </div>

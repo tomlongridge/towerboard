@@ -20,8 +20,14 @@ class BoardController extends Controller
      */
     public function index()
     {
+        $boards = auth()->user()->subscriptions()->get();
+        return view('boards.index', compact('boards'));
+    }
+
+    public function search()
+    {
         $boards = Board::orderBy('name')->get();
-        return view('boards.list', compact('boards'));
+        return view('boards.search', compact('boards'));
     }
 
     /**

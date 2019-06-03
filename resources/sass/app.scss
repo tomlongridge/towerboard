@@ -1,5 +1,6 @@
 // Fonts
 @import url('https://fonts.googleapis.com/css?family=Nunito');
+@import url('https://fonts.googleapis.com/css?family=Material+Icons');
 
 // Variables
 @import 'variables';
@@ -109,4 +110,18 @@ body {
 
 .subscribe {
     margin-bottom: 10px;
+}
+
+.material-icons {
+    padding-right: 0px;
+    font-size: 12pt;
+    color: rgb(34, 119, 190);
+}
+
+ul.radio-list {
+    list-style: none;
+    padding-left: 0px;
+    label {
+        margin-bottom: 2px;
+    }
 }
