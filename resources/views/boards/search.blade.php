@@ -41,9 +41,9 @@
             <li data-type="{{ \App\Enums\BoardType::getKey($board->type) }}">
                 <span class="tower-item">
                     @if($board->tower)
-                        @include('macros.tower', ['tower' => $board->tower, 'url' => route('boards.show', ['board' => $board->id])])
+                        @include('macros.tower', ['tower' => $board->tower, 'url' => route('boards.show', ['board' => $board->name])])
                     @else
-                        <a href="{{ route("boards.show", ["board" => $board->id]) }}">{{ $board->name }}</a>
+                        <a href="{{ route("boards.show", ['board' => $board->name]) }}">{{ $board->name }}</a>
                     @endif
                     @if($board->isSubscribed(auth()->user()))
                         <i class="material-icons">star</i>

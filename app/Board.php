@@ -13,6 +13,11 @@ class Board extends Model
 
     protected $guarded = ['id'];
 
+    public function getRouteKeyName()
+    {
+        return 'name';
+    }
+
     protected static function boot()
     {
         parent::boot();
@@ -38,9 +43,13 @@ class Board extends Model
         ]);
     }
 
-    public function isSubscribed(User $user)
+    public function isSubscribed(?User $user)
     {
-        return $this->subscribers()->where('id', $user->id)->exists();
+        if ($user == null) {
+            return false;
+        } else {
+            return $this->subscribers()->where('id', $user->id)->exists();
+        }
     }
 
     public function notices()

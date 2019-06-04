@@ -17,7 +17,7 @@
         <p>
             <ul>
             @foreach($board->affiliatedTo()->get() as $affiliate)
-                <li><a href="{{ route('boards.show', ['board' => $affiliate->id]) }}">{{ $affiliate->name }}</a></li>
+                <li><a href="{{ route('boards.show', ['board' => $affiliate->name]) }}">{{ $affiliate->name }}</a></li>
             @endforeach
             </ul>
         </p>
@@ -27,9 +27,9 @@
     </p>
 
     @can('update', $board)
-        <a class="btn btn-primary" href="{{ route('boards.edit',[ 'board' => $board->id ]) }}">Edit</a>
+        <a class="btn btn-primary" href="{{ route('boards.edit', ['board' => $board->name]) }}">Edit</a>
 
-        <form method="POST" action="{{ route('boards.destroy', [ 'board' => $board->id ]) }}" style="display: inline">
+        <form method="POST" action="{{ route('boards.destroy', ['board' => $board->name]) }}" style="display: inline">
             @method("DELETE")
             @csrf
             <input type="submit" class="btn btn-primary" value="Delete" />
@@ -42,7 +42,7 @@
             Affiliates:
             <ul>
             @foreach($board->affiliates()->get() as $affiliate)
-                <li><a href="{{ route('boards.show', ['board' => $affiliate->id]) }}">{{ $affiliate->name }}</a></li>
+                <li><a href="{{ route('boards.show', ['board' => $affiliate->name]) }}">{{ $affiliate->name }}</a></li>
             @endforeach
             </ul>
         </p>

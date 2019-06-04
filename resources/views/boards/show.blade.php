@@ -5,7 +5,7 @@
     @if(!$board->notices->isEmpty())
         <ul>
         @foreach ($board->notices as $notice)
-            <li><a href="{{ route('notices.show', ['board' => $board->id, 'notice' => $notice->id]) }}">{{ $notice->title }}</a></li>
+            <li><a href="{{ route('notices.show', ['board' => $board->name, 'notice' => $notice->id]) }}">{{ $notice->title }}</a></li>
         @endforeach
         </ul>
     @else
@@ -17,7 +17,7 @@
     @can('add-notice', $board)
         <h3>Add Notice</h3>
         <div class="container">
-            <form method="POST" action="{{ route('notices.store', ['board' => $board->id]) }}">
+            <form method="POST" action="{{ route('notices.store', ['board' => $board->name]) }}">
                 @csrf
 
                 <div class="row">

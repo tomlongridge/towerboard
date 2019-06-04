@@ -5,6 +5,7 @@ use App\Tower;
 use App\User;
 use App\Enums\BoardType;
 
+use Carbon\Carbon;
 class BoardsTableSeeder extends Seeder{
     /**
      * Run the database seeds.
@@ -54,13 +55,15 @@ class BoardsTableSeeder extends Seeder{
         DB::table('notices')->insert([
             'board_id' => $towerBoardId,
             'title' => 'Practice Cancelled on Thursday 3rd May',
-            'body' => 'There will be no practice on the 3rd May due to a choir practice'
+            'body' => 'There will be no practice on the 3rd May due to a choir practice',
+            'created_at' => Carbon::now()->subtract(7, 'day')
         ]);
 
         DB::table('notices')->insert([
             'board_id' => $towerBoardId,
             'title' => 'Tower Outing',
-            'body' => 'Wequot;re going on an outing on the 7th September. Let me know if you want to come!'
+            'body' => 'We\`re going on an outing on the 7th September. Let me know if you want to come!',
+            'created_at' => Carbon::now()->subtract(3, 'day')
         ]);
 
     }

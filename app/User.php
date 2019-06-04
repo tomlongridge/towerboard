@@ -44,6 +44,18 @@ class User extends Authenticatable implements MustVerifyEmail
                     ->withTimestamps();
     }
 
+    public function notices()
+    {
+        return $this->hasManyThrough(
+            Notice::class,
+            BoardSubscription::class,
+            'user_id',
+            'board_id',
+            'id',
+            'board_id'
+        );
+    }
+
     public function getNameAttribute()
     {
         return $this->attributes['forename'] . ' ' .

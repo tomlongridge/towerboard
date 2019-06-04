@@ -21,8 +21,10 @@
                 <div class="sidebar-heading"><a href="/">Towerboard</a></div>
                 <div class="list-group list-group-flush">
                     <a href="{{ route('boards.search') }}" class="list-group-item list-group-item-action bg-light">Find Boards</a>
-                    <a href="{{ route('boards.index') }}" class="list-group-item list-group-item-action bg-light">My Boards</a>
-                    <a href="#" class="list-group-item list-group-item-action bg-light">My Notices</a>
+                    @auth
+                        <a href="{{ route('boards.index') }}" class="list-group-item list-group-item-action bg-light">My Boards</a>
+                        <a href="{{ route('users.notices') }}" class="list-group-item list-group-item-action bg-light">My Notices</a>
+                    @endauth
                 </div>
             </div>
             <!-- /#sidebar-wrapper -->

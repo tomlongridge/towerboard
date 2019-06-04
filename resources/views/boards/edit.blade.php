@@ -4,7 +4,7 @@
 
     <div class="container">
         @if(isset($board))
-            <form method="POST" action="{{ route('boards.update', [ 'board' => $board->id ]) }}">
+            <form method="POST" action="{{ route('boards.update', ['board' => $board->name]) }}">
             @method('PATCH')
         @else
             <form method="POST" action="{{ route('boards.store') }}">
@@ -14,14 +14,16 @@
             <div class="row">
                 <label for="name">Name</label>
                 <input type="text" class="form-control" id="name" name="name" placeholder="My Tower"
-                       value="{{ isset($board) ? $board->name : '' }}" />
+                       value="{{ old('name', isset($board) ? $board->name : '') }}" />
             </div>
             <div class="row">
                 <label for="name">Tower</label>
                 <select id="tower" name="tower_id" class="tb-dropdown">
-                    <option value="{{ $board->tower_id }}" selected="selected">
-                        @include('macros.tower', ['tower' => $board->tower])
-                    </option>
+                    @if(isset($board))
+                        <option value="{{ $board->tower_id }}" selected="selected">
+                            @include('macros.tower', ['tower' => $board->tower])
+                        </option>
+                    @endif
                 </select>
             </div>
             <div class="row">
@@ -31,6 +33,8 @@
             </div>
             <div class="row">
                 <input type="submit" class="btn btn-primary" id="menu-toggle" value="Save" />
+                &nbsp;
+                <a href="{{ route('boards.details', [ 'board' => $board->name ]) }}" class="btn btn-secondary">Back</a>
             </div>
         </form>
     </div>

@@ -8,7 +8,7 @@ use App\Notifications\NoticeCreated;
 use Illuminate\Http\Request;
 use Notification;
 
-class NoticeController extends Controller
+class BoardNoticeController extends Controller
 {
     public function __construct()
     {
@@ -22,7 +22,7 @@ class NoticeController extends Controller
      */
     public function index(Board $board)
     {
-        return redirect(route("boards.show", ["board" => $board->id]));
+        return redirect(route("boards.show", ['board' => $board->name]));
     }
 
     /**
@@ -32,7 +32,7 @@ class NoticeController extends Controller
      */
     public function create(Board $board)
     {
-        return redirect(route("boards.show", ["board" => $board->id]));
+        return redirect(route("boards.show", ['board' => $board->name]));
     }
 
     /**
@@ -47,7 +47,7 @@ class NoticeController extends Controller
 
         Notification::send($board->subscribers()->get(), new NoticeCreated($notice));
 
-        return redirect(route('boards.show', ['board' => $board->id]));
+        return redirect(route('boards.show', ['board' => $board->name]));
     }
 
     /**
@@ -82,7 +82,7 @@ class NoticeController extends Controller
     public function update(Request $request, Board $board, Notice $notice)
     {
         $notice->update($this->validateFields($request));
-        return redirect(route('notices.show', ['board' => $board->id, 'notice' => $notice->id]));
+        return redirect(route('notices.show', ['board' => $board->name, 'notice' => $notice->id]));
     }
 
     /**
@@ -95,7 +95,7 @@ class NoticeController extends Controller
     {
         $notice->delete();
 
-        return redirect(route("boards.show", ["board" => $board->id]));
+        return redirect(route("boards.show", ['board' => $board->name]));
     }
 
     public function mail(Board $board, Notice $notice)

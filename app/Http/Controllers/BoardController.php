@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Board;
 
+use Auth;
 use Illuminate\Http\Request;
 
 class BoardController extends Controller
@@ -20,8 +21,12 @@ class BoardController extends Controller
      */
     public function index()
     {
-        $boards = auth()->user()->subscriptions()->get();
-        return view('boards.index', compact('boards'));
+        if (!Auth::guest()) {
+            $boards = Auth::user()->subscriptions()->get();
+            return view('boards.index', compact('boards'));
+        } else {
+            return $this->search();
+        }
     }
 
     public function search()
@@ -50,7 +55,7 @@ class BoardController extends Controller
     {
         $board = Board::create($this->validateFields($request) + ['owner_id' => auth()->id()]);
         $board->subscribe(auth()->user());
-        return redirect(route('boards.show', ['board' => $board->id]));
+        return redirect(route('boards.details', ['board' => $board->name]));
     }
 
     /**
@@ -101,7 +106,7 @@ class BoardController extends Controller
     {
         $board->update($this->validateFields($request));
 
-        return redirect(route('boards.details', ['board' => $board->id]));
+        return redirect(route('boards.details', ['board' => $board->name]));
     }
 
     /**
