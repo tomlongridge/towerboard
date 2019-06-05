@@ -22,7 +22,7 @@ class BoardController extends Controller
     public function index()
     {
         if (!Auth::guest()) {
-            $boards = Auth::user()->subscriptions()->get();
+            $boards = Auth::user()->subscriptions;
             return view('boards.index', compact('boards'));
         } else {
             return $this->search();
@@ -82,6 +82,11 @@ class BoardController extends Controller
     public function contact(Board $board)
     {
         return view('boards.contact', compact('board'));
+    }
+
+    public function members(Board $board)
+    {
+        return view('boards.members', compact('board'));
     }
 
     /**

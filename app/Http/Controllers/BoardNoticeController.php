@@ -45,7 +45,7 @@ class BoardNoticeController extends Controller
     {
         $notice = $board->addNotice($this->validateFields($request));
 
-        Notification::send($board->subscribers()->get(), new NoticeCreated($notice));
+        Notification::send($board->subscribers, new NoticeCreated($notice));
 
         return redirect(route('boards.show', ['board' => $board->name]));
     }

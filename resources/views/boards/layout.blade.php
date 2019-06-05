@@ -17,7 +17,7 @@
                 @section('unsubscribe')
                     <input type="submit" class="btn btn-primary" value="Unsubscribe" />
                 @endsection
-                @include('macros.subscribe', ['board' => $board])
+                @include('macros.subscribe', [ 'board' => $board, 'user' => null])
 
             </div>
         </div>
@@ -29,6 +29,7 @@
                     {{ \App\Enums\BoardType::getDescription($board->type) }} Details
                 </a>
             </div>
+            <div class="col {{ Route::currentRouteName() == 'boards.members' ? 'selected' : '' }}"><a href="{{ route('boards.members', ['board' => $board->name]) }}">Members</a></div>
             <div class="col {{ Route::currentRouteName() == 'boards.contact' ? 'selected' : '' }}"><a href="{{ route('boards.contact', ['board' => $board->name]) }}">Contact</a></div>
         </div>
     </div>

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Board;
-use App\BoardSubscription;
+use App\User;
 use Auth;
-use Illuminate\Http\Request;
+use App\BoardSubscription;
 
 class SubscriptionController extends Controller
 {
@@ -15,10 +15,16 @@ class SubscriptionController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request, Board $board)
+    public function store(Board $board, User $user)
     {
+        if (!isset($user->id)) {
+            $user = Auth::user();
+        }
+
+        $this->authorize('create', [BoardSubscription::class, $board, $user]);
+
         $board->subscribers()->attach(Auth::user()->id);
-        return redirect(route('boards.show', [ 'board' => $board ]));
+        return back();
     }
 
     /**
@@ -27,9 +33,15 @@ class SubscriptionController extends Controller
      * @param  \App\BoardSubscription  $boardSubscription
      * @return \Illuminate\Http\Response
      */
-    public function destroy(BoardSubscription $boardSubscription, Board $board)
+    public function destroy(Board $board, User $user)
     {
-        $board->subscribers()->detach(Auth::user()->id);
-        return redirect(route('boards.show', [ 'board' => $board ]));
+        if (!isset($user->id)) {
+            $user = Auth::user();
+        }
+
+        $this->authorize('delete', [BoardSubscription::class, $board, $user]);
+
+        $board->subscribers()->detach($user->id);
+        return back();
     }
 }

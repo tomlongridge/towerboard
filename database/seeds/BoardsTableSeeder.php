@@ -15,6 +15,7 @@ class BoardsTableSeeder extends Seeder{
     public function run()
     {
         $user = User::where('email', '=', 'tomlongridge@gmail.com')->first();
+        $user2 = User::where('email', '=', 'tomlongridge+ann@gmail.com')->first();
 
         $assocBoardId = DB::table('boards')->insertGetId([
             'name' => 'Bath & Wells',
@@ -63,6 +64,12 @@ class BoardsTableSeeder extends Seeder{
             'board_id' => $towerBoardId,
             'title' => 'Tower Outing',
             'body' => 'We\`re going on an outing on the 7th September. Let me know if you want to come!',
+            'created_at' => Carbon::now()->subtract(3, 'day')
+        ]);
+
+        DB::table('board_subscriptions')->insert([
+            'board_id' => $towerBoardId,
+            'user_id' => $user2->id,
             'created_at' => Carbon::now()->subtract(3, 'day')
         ]);
 

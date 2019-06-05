@@ -12,11 +12,11 @@
     @endif
 
 
-    @if(!$board->affiliatedTo()->get()->isEmpty())
+    @if(!$board->affiliatedTo->isEmpty())
         <h2>Affiliated To</h2>
         <p>
             <ul>
-            @foreach($board->affiliatedTo()->get() as $affiliate)
+            @foreach($board->affiliatedTo as $affiliate)
                 <li><a href="{{ route('boards.show', ['board' => $affiliate->name]) }}">{{ $affiliate->name }}</a></li>
             @endforeach
             </ul>
@@ -36,12 +36,12 @@
         </form>
     @endcan
 
-    @if(!$board->affiliates()->get()->isEmpty())
+    @if(!$board->affiliates->isEmpty())
         <h2>Affiliated Boards</h2>
         <p>
             Affiliates:
             <ul>
-            @foreach($board->affiliates()->get() as $affiliate)
+            @foreach($board->affiliates as $affiliate)
                 <li><a href="{{ route('boards.show', ['board' => $affiliate->name]) }}">{{ $affiliate->name }}</a></li>
             @endforeach
             </ul>

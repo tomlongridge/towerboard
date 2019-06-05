@@ -59,7 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getNameAttribute()
     {
         return $this->attributes['forename'] . ' ' .
-               $this->attributes['middle_initials'] . ' ' . // TODO: guard for empty
+               ($this->attributes['middle_initials'] ? $this->attributes['middle_initials'] . ' ' : '') .
                $this->attributes['surname'];
     }
 }
