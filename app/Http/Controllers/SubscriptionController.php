@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Board;
 use App\User;
-use Auth;
 use App\BoardSubscription;
+use App\Http\Requests\EmailListRequest;
+
+use Auth;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class SubscriptionController extends Controller
 {
@@ -23,7 +27,29 @@ class SubscriptionController extends Controller
 
         $this->authorize('create', [BoardSubscription::class, $board, $user]);
 
-        $board->subscribers()->attach(Auth::user()->id);
+        $board->subscribers()->attach($user->id);
+        return back();
+    }
+
+    public function add(Board $board, EmailListRequest $request)
+    {
+        $this->authorize('addUser', [BoardSubscription::class, $board, Auth::user()]);
+
+        foreach ($request->emails as $email) {
+            $user = User::where('email', $email["email"])->first();
+            if ($user == null) {
+                $user = User::create([
+                    'email' => $email["email"],
+                    'forename' => $email["forename"],
+                    'surname' => $email["surname"],
+                ]);
+            }
+
+            if (!$board->subscribers()->where('id', $user->id)->exists()) {
+                $board->subscribers()->attach($user->id);
+            }
+        }
+
         return back();
     }
 

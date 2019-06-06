@@ -41,7 +41,7 @@
         <p>
             Affiliates:
             <ul>
-            @foreach($board->affiliates as $affiliate)
+            @foreach($board->affiliates  as $affiliate)
                 <li><a href="{{ route('boards.show', ['board' => $affiliate->name]) }}">{{ $affiliate->name }}</a></li>
             @endforeach
             </ul>

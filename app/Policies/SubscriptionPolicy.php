@@ -27,6 +27,11 @@ class SubscriptionPolicy
         }
     }
 
+    public function addUser(?User $user, Board $board)
+    {
+        return $board->owner->id == $user->id;
+    }
+
     /**
      * Determine whether the user can delete the board subscription.
      *

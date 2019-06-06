@@ -18,4 +18,19 @@
     </ul>
     @endif
 
+    <h2>Add Users</h2>
+    <form method="POST" action="{{ route('subscriptions.email', ['board' => $board->name]) }}">
+        @csrf
+        <textarea name="emails" class="form-control">{{ old('emails') }}</textarea>
+        <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+
+    @if(!$errors->isEmpty())
+        <ul class="alert alert-danger">
+        @foreach($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+        </ul>
+    @endif
+
 @endsection
