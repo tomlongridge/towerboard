@@ -80,16 +80,4 @@ class BoardPolicy
     {
         return false;
     }
-
-    /**
-     * Determine whether the user can add notices to the board.
-     *
-     * @param  \App\User  $user
-     * @param  \App\Board  $board
-     * @return mixed
-     */
-    public function addNotice(User $user, Board $board)
-    {
-        return true; //$user->id == $board->owner->id;
-    }
 }

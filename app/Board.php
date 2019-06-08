@@ -43,8 +43,12 @@ class Board extends Model
         ]);
     }
 
-    public function isSubscribed(?User $user)
+    public function isSubscribed(User $user = null)
     {
+        if ($user == null) {
+            $user = auth()->user();
+        }
+
         if ($user == null) {
             return false;
         } else {
