@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
+use App\Enums\SubscriptionType;
 
 class UsersTableSeeder extends Seeder
 {
@@ -17,7 +18,16 @@ class UsersTableSeeder extends Seeder
             'surname' => 'Longridge',
             'email' => 'tomlongridge@gmail.com',
             'password' => bcrypt('p'),
-            'email_verified_at' => new DateTime
+            'email_verified_at' => new DateTime,
+        ]);
+
+        DB::table('users')->insert([
+            'forename' => 'Sue',
+            'middle_initials' => '',
+            'surname' => 'Member',
+            'email' => 'tomlongridge+sue@gmail.com',
+            'password' => bcrypt('p'),
+            'email_verified_at' => new DateTime,
         ]);
 
         DB::table('users')->insert([
@@ -26,7 +36,7 @@ class UsersTableSeeder extends Seeder
             'surname' => 'Other',
             'email' => 'tomlongridge+ann@gmail.com',
             'password' => bcrypt('p'),
-            'email_verified_at' => new DateTime
+            'email_verified_at' => new DateTime,
         ]);
     }
 }

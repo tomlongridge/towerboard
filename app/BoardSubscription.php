@@ -6,10 +6,19 @@ use App\Board;
 use App\Notice;
 use App\User;
 
+use BenSampo\Enum\Traits\CastsEnums;
+
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use App\Enums\SubscriptionType;
 
 class BoardSubscription extends Pivot
 {
+    use CastsEnums;
+
+    protected $enumCasts = [
+        'type' => SubscriptionType::class
+    ];
+
     public $table = 'board_subscriptions';
 
     public function board()

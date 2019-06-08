@@ -10,6 +10,7 @@ use App\Http\Requests\EmailListRequest;
 use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Enums\SubscriptionType;
 
 class SubscriptionController extends Controller
 {
@@ -28,6 +29,21 @@ class SubscriptionController extends Controller
         $this->authorize('create', [BoardSubscription::class, $board, $user]);
 
         $board->subscribers()->attach($user->id);
+        return back();
+    }
+
+    public function update(Request $request, Board $board, User $user)
+    {
+        if (!isset($user->id)) {
+            $user = Auth::user();
+        }
+
+        $this->authorize('update', [BoardSubscription::class, $board, $user]);
+
+        $board->subscribers()->updateExistingPivot(
+            $user->id,
+            ['type' => SubscriptionType::getInstance(intval($request->type))]
+        );
         return back();
     }
 

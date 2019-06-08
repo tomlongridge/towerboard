@@ -6,6 +6,7 @@ use App\User;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\SubscriptionType;
 
 class Board extends Model
 {
@@ -43,17 +44,34 @@ class Board extends Model
         ]);
     }
 
-    public function isSubscribed(User $user = null)
+    public function isSubscribed(User $user = null, ?SubscriptionType $type = null)
     {
         if ($user == null) {
             $user = auth()->user();
         }
 
+        if ($type == null) {
+            $type = SubscriptionType::getInstance(SubscriptionType::BASIC);
+        }
+
         if ($user == null) {
             return false;
         } else {
-            return $this->subscribers()->where('id', $user->id)->exists();
+            return $this->subscribers()
+                ->where('id', $user->id)
+                ->wherePivot('type', '>=', $type->value)
+                ->exists();
         }
+    }
+
+    public function isMember(User $user = null)
+    {
+        return $this->isSubscribed($user, SubscriptionType::getInstance(SubscriptionType::MEMBER));
+    }
+
+    public function isAdmin(User $user = null)
+    {
+        return $this->isSubscribed($user, SubscriptionType::getInstance(SubscriptionType::ADMIN));
     }
 
     public function notices()
@@ -75,6 +93,8 @@ class Board extends Model
     {
         return $this->belongsToMany('App\User', 'board_subscriptions')
                     ->using('App\BoardSubscription')
+                    ->withPivot('type')
+                    ->as('subscription')
                     ->withTimestamps();
     }
 

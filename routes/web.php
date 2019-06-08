@@ -41,4 +41,6 @@ Route::resource('/boards/{board}/notices', 'BoardNoticeController');
 Route::post('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@store')->name('subscriptions.store');
 Route::delete('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@destroy')
     ->name('subscriptions.destroy');
+Route::patch('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@update')
+    ->name('subscriptions.update');
 Route::post('/boards/{board}/subscriptions/emails', 'SubscriptionController@add')->name('subscriptions.email');

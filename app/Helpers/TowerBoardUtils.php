@@ -15,6 +15,6 @@ class TowerBoardUtils
             $prefix = substr($emailSplit[0], 0, 1);
         }
 
-        return $prefix . "...@" . substr($emailSplit[1], 4);
+        return $prefix . "...@..." . substr($emailSplit[1], 4);
     }
 }

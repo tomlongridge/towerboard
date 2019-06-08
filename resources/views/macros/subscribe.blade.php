@@ -2,13 +2,13 @@
     @if (!$board->isSubscribed(isset($user) ? $user : auth()->user()))
         <form method="POST" action="{{ route('subscriptions.store', ['board' => $board->name, 'user' => isset($user) ? $user : null ]) }}" style="display: inline">
             @csrf
-            @yield('subscribe')
+            @yield(isset($subscribe) ? $subscribe : 'subscribe')
         </form>
-    @else
+        @else
         <form method="POST" action="{{ route('subscriptions.destroy', ['board' => $board->name, 'user' => isset($user) ? $user : null ]) }}" style="display: inline">
             @csrf
             @method("DELETE")
-            @yield('unsubscribe')
+            @yield(isset($unsubscribe) ? $unsubscribe : 'unsubscribe')
         </form>
     @endif
 @endauth

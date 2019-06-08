@@ -6,6 +6,8 @@ use App\User;
 use App\Enums\BoardType;
 
 use Carbon\Carbon;
+use App\Enums\SubscriptionType;
+
 class BoardsTableSeeder extends Seeder{
     /**
      * Run the database seeds.
@@ -15,7 +17,8 @@ class BoardsTableSeeder extends Seeder{
     public function run()
     {
         $user = User::where('email', '=', 'tomlongridge@gmail.com')->first();
-        $user2 = User::where('email', '=', 'tomlongridge+ann@gmail.com')->first();
+        $user_mem = User::where('email', '=', 'tomlongridge+ann@gmail.com')->first();
+        $user_sub = User::where('email', '=', 'tomlongridge+sue@gmail.com')->first();
 
         $assocBoardId = DB::table('boards')->insertGetId([
             'name' => 'Bath & Wells',
@@ -68,9 +71,24 @@ class BoardsTableSeeder extends Seeder{
         ]);
 
         DB::table('board_subscriptions')->insert([
-            'board_id' => $towerBoardId,
-            'user_id' => $user2->id,
-            'created_at' => Carbon::now()->subtract(3, 'day')
+            [
+                'board_id' => $towerBoardId,
+                'user_id' => $user_sub->id,
+                'type' => SubscriptionType::BASIC,
+                'created_at' => Carbon::now()->subtract(3, 'day')
+            ],
+            [
+                'board_id' => $towerBoardId,
+                'user_id' => $user_mem->id,
+                'type' => SubscriptionType::MEMBER,
+                'created_at' => Carbon::now()->subtract(3, 'day')
+            ],
+            [
+                'board_id' => $towerBoardId,
+                'user_id' => $user->id,
+                'type' => SubscriptionType::ADMIN,
+                'created_at' => Carbon::now()->subtract(3, 'day')
+            ]
         ]);
 
     }

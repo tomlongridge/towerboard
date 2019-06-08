@@ -5,20 +5,48 @@
     <h2>Members</h2>
 
     @if(auth()->check() && ($board->owner->id == auth()->user()->id) && !$board->subscribers->isEmpty())
-        <ul>
-            @foreach($board->subscribers as $user)
-                <li>
-                    @section('unsubscribe')
-                        <input type="submit" class="btn btn-primary" value="Unsubscribe" />
-                    @endsection
-                    @include('macros.subscribe', [ 'board' => $board, 'user' => $user ])
-                    {{ $user->name }}
-                    &lt;{{ TowerBoardUtils::obscureEmail($user->email) }}&gt;
-                </li>
-            @endforeach
-        </ul>
+        <table>
+            <thead>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Action</th>
+            </thead>
+            <tbody>
+                @foreach($board->subscribers as $user)
+                    <tr>
+                        <td>
+                            {{ $user->name }}
+                        </td>
+                        <td>
+                            {{ TowerBoardUtils::obscureEmail($user->email) }}
+                        </td>
+                        <td>
+                            @if($user->id != auth()->id())
+                                @section('inline-unsubscribe')
+                                    <input type="submit" class="btn btn-primary" value="Remove" />
+                                @endsection
+                                @include('macros.subscribe', [ 'unsubscribe' => 'inline-unsubscribe', 'board' => $board, 'user' => $user ])
+                                <form method="POST" action="{{ route('subscriptions.update', ['board' => $board, 'user' => $user]) }}" style="display: inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <select name="type" onchange="this.form.submit()">
+                                        @foreach (\App\Enums\SubscriptionType::getInstances() as $type)
+                                            <option
+                                                value="{{ $type->value }}"
+                                                {{ $type->key == $user->subscription->type->key ? 'selected' : ''}}>
+                                                {{ $type->description }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            @endif
+                        </td>
+                    </li>
+                @endforeach
+            </tbody>
+        </table>
     @else
-        <p>{{ $board->subscribers()->count() }} members on Towerboard.</p>
+        <p>{{ $board->subscribers->count() }} members on Towerboard.</p>
     @endif
 
     @can('update', $board)

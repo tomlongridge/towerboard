@@ -27,6 +27,23 @@ class SubscriptionPolicy
         }
     }
 
+    /**
+     * Determine whether the user can update board subscriptions.
+     *
+     * @param  \App\User  $user
+     * @return mixed
+     */
+    public function update(?User $user, Board $board, User $subscriber)
+    {
+        if ($subscriber->id == null) {
+            return false;
+        } elseif ($subscriber->id == $user->id) {
+            return true;
+        } else {
+            return $board->owner->id == $user->id;
+        }
+    }
+
     public function addUser(?User $user, Board $board)
     {
         return $board->owner->id == $user->id;

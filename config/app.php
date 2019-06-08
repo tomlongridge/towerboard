@@ -175,6 +175,7 @@ return [
         App\Providers\EventServiceProvider::class,
         // Removed Telescope from global config and conditionally added to AppServiceProvider
         App\Providers\RouteServiceProvider::class,
+        App\Providers\BladeDirectiveServiceProvider::class,
 
     ],
 
