@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use App\Enums\SubscriptionType;
 
 class CreateBoard extends Migration
 {
@@ -18,9 +19,10 @@ class CreateBoard extends Migration
             $table->timestamps();
             $table->string('name')->unique();
             $table->unsignedTinyInteger('type')->nullable();
-            $table->unsignedBigInteger('owner_id'); // FK->users
+            $table->unsignedBigInteger('created_by'); // FK->users
             $table->unsignedBigInteger('tower_id')->nullable(); // FK->towers
             $table->string('website_url')->nullable();
+            $table->unsignedTinyInteger('can_post')->default(SubscriptionType::ADMIN);
 
             $table->softDeletes();
         });

@@ -6,6 +6,7 @@ use App\Board;
 
 use Auth;
 use Illuminate\Http\Request;
+use App\Enums\SubscriptionType;
 
 class BoardController extends Controller
 {
@@ -53,8 +54,11 @@ class BoardController extends Controller
      */
     public function store(Request $request)
     {
-        $board = Board::create($this->validateFields($request) + ['owner_id' => auth()->id()]);
-        $board->subscribe(auth()->user());
+        $board = Board::create(
+            $this->validateFields($request) +
+            ['created_by' => auth()->id()]
+        );
+        $board->subscribe(auth()->user(), SubscriptionType::ADMIN);
         return redirect(route('boards.details', ['board' => $board->name]));
     }
 
@@ -133,6 +137,7 @@ class BoardController extends Controller
             'name' => 'required',
             'tower_id' => 'nullable',
             'website_url' => 'nullable',
+            'can_post' => 'nullable'
         ]);
     }
 }

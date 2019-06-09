@@ -3,6 +3,7 @@
 @section('content')
 
     <p>{{ $notice->body }}</p>
+    <p>Posted by: {{ $notice->createdBy->name }}</p>
 
     @can('update', $notice)
 

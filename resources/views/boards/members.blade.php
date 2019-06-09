@@ -4,7 +4,7 @@
 
     <h2>Members</h2>
 
-    @if(auth()->check() && ($board->owner->id == auth()->user()->id) && !$board->subscribers->isEmpty())
+    @admin($board)
         <table>
             <thead>
                 <th>Name</th>
@@ -48,6 +48,13 @@
     @else
         <p>{{ $board->subscribers->count() }} members on Towerboard.</p>
     @endif
+
+    <h2>Board Administrators</h2>
+    <ul>
+        @foreach($board->administrators()->get() as $admin)
+            <li>{{ $admin->name }}</li>
+        @endforeach
+    </ul>
 
     @can('update', $board)
         <h2>Add Users</h2>

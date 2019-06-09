@@ -34,6 +34,6 @@ class NoticeCreated extends Mailable
     {
         return $this->markdown('mail.notices.created', ['notice' => $this->notice])
             ->subject($this->notice->title)
-            ->from($this->notice->board->owner->email, $this->notice->board->owner->name);
+            ->from($this->notice->created_by->email, $this->notice->created_by->name);
     }
 }

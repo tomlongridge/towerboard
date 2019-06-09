@@ -26,15 +26,15 @@ class BladeDirectiveServiceProvider extends ServiceProvider
     public function boot()
     {
         Blade::if('subscriber', function (Board $board) {
-            return $board->isSubscribed(auth()->user());
+            return $board->isSubscribed();
         });
 
         Blade::if('member', function (Board $board) {
-            return $board->isMember(auth()->user());
+            return $board->isMember();
         });
 
         Blade::if('admin', function (Board $board) {
-            return $board->isAdmin(auth()->user());
+            return $board->isAdmin();
         });
     }
 }

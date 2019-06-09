@@ -23,7 +23,7 @@ class SubscriptionPolicy
         } elseif ($subscriber->id == $user->id) {
             return true;
         } else {
-            return $board->owner->id == $user->id;
+            return $board->isAdmin($user);
         }
     }
 
@@ -35,18 +35,12 @@ class SubscriptionPolicy
      */
     public function update(?User $user, Board $board, User $subscriber)
     {
-        if ($subscriber->id == null) {
-            return false;
-        } elseif ($subscriber->id == $user->id) {
-            return true;
-        } else {
-            return $board->owner->id == $user->id;
-        }
+        return $this->create($user, $board, $subscriber);
     }
 
     public function addUser(?User $user, Board $board)
     {
-        return $board->owner->id == $user->id;
+        return $board->isAdmin($user);
     }
 
     /**
@@ -58,12 +52,6 @@ class SubscriptionPolicy
      */
     public function delete(User $user, Board $board, User $subscriber)
     {
-        if ($subscriber->id == null) {
-            return false;
-        } elseif ($subscriber->id == $user->id) {
-            return true;
-        } else {
-            return $board->owner->id == $user->id;
-        }
+        return $this->create($user, $board, $subscriber);
     }
 }

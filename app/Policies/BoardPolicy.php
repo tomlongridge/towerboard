@@ -42,7 +42,7 @@ class BoardPolicy
      */
     public function update(User $user, Board $board)
     {
-        return $user->id == $board->owner->id;
+        return $board->administrators()->where('id', $user->id)->exists();
     }
 
     /**
@@ -54,7 +54,7 @@ class BoardPolicy
      */
     public function delete(User $user, Board $board)
     {
-        return $user->id == $board->owner->id;
+        return $board->administrators()->where('id', $user->id);
     }
 
     /**
@@ -66,7 +66,7 @@ class BoardPolicy
      */
     public function restore(User $user, Board $board)
     {
-        return $user->id == $board->owner->id;
+        return $board->administrators()->where('id', $user->id);
     }
 
     /**

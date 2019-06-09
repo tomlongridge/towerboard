@@ -33,55 +33,62 @@ class Board extends Model
 
     public function addNotice(array $fields)
     {
-        return Notice::create(array_merge($fields, ['board_id' => $this->id]));
+        return Notice::create(
+            array_merge(
+                $fields,
+                [
+                    'board_id' => $this->id,
+                    'created_by' => auth()->id(),
+                ]
+            )
+        );
     }
 
-    public function subscribe(User $user)
+    public function subscribe(User $user, $type = null)
     {
         BoardSubscription::create([
             'user_id' => $user->id,
-            'board_id' => $this->id
+            'board_id' => $this->id,
+            'type' => $type
         ]);
     }
 
-    public function isSubscribed(User $user = null, ?SubscriptionType $type = null)
+    public function getSubscription(User $user = null, $type = SubscriptionType::BASIC)
     {
         if ($user == null) {
             $user = auth()->user();
         }
 
-        if ($type == null) {
-            $type = SubscriptionType::getInstance(SubscriptionType::BASIC);
+        if ($user == null) {
+            return null;
         }
 
-        if ($user == null) {
-            return false;
-        } else {
-            return $this->subscribers()
-                ->where('id', $user->id)
-                ->wherePivot('type', '>=', $type->value)
-                ->exists();
-        }
+        $subscription = $this->subscribers()
+            ->where('id', $user->id)
+            ->wherePivot('type', '>=', $type)
+            ->first();
+
+        return $subscription? $subscription->subscription : null;
+    }
+
+    public function isSubscribed(User $user = null, $type = SubscriptionType::BASIC)
+    {
+        return $this->getSubscription($user, $type) != null;
     }
 
     public function isMember(User $user = null)
     {
-        return $this->isSubscribed($user, SubscriptionType::getInstance(SubscriptionType::MEMBER));
+        return $this->isSubscribed($user, SubscriptionType::MEMBER);
     }
 
     public function isAdmin(User $user = null)
     {
-        return $this->isSubscribed($user, SubscriptionType::getInstance(SubscriptionType::ADMIN));
+        return $this->isSubscribed($user, SubscriptionType::ADMIN);
     }
 
     public function notices()
     {
         return $this->hasMany(Notice::class);
-    }
-
-    public function owner()
-    {
-        return $this->belongsTo(User::class);
     }
 
     public function tower()
@@ -96,6 +103,18 @@ class Board extends Model
                     ->withPivot('type')
                     ->as('subscription')
                     ->withTimestamps();
+    }
+
+    public function members()
+    {
+        return $this->subscribers()
+            ->wherePivot('type', '>=', SubscriptionType::MEMBER);
+    }
+
+    public function administrators()
+    {
+        return $this->subscribers()
+            ->wherePivot('type', '>=', SubscriptionType::ADMIN);
     }
 
     public function affiliates()

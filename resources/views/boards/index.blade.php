@@ -7,11 +7,7 @@
     <ul class="list">
         @foreach($boards as $board)
             <li>
-                @if($board->tower)
-                    @include('macros.tower', ['tower' => $board->tower, 'url' => route('boards.show', ['board' => $board->name])])
-                @else
-                    <a href="{{ route("boards.show", ['board' => $board->name]) }}">{{ $board->name }}</a>
-                @endif
+                @include('macros.board', ['board' => $board])
             </li>
         @endforeach
     </ul>

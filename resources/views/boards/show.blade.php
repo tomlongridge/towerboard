@@ -14,7 +14,7 @@
 
     <hr />
 
-    @can('add-notice', $board)
+    @can('create', [\App\Notice::class, $board])
         <h3>Add Notice</h3>
         <div class="container">
             <form method="POST" action="{{ route('notices.store', ['board' => $board->name]) }}">

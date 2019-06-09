@@ -14,12 +14,13 @@ class AddForeignKeys extends Migration
     public function up()
     {
         Schema::table('boards', function (Blueprint $table) {
-            $table->foreign('owner_id')->references('id')->on('users');
+            $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('tower_id')->references('id')->on('towers');
         });
 
         Schema::table('notices', function (Blueprint $table) {
             $table->foreign('board_id')->references('id')->on('boards');
+            $table->foreign('created_by')->references('id')->on('users');
         });
 
         Schema::table('board_subscriptions', function (Blueprint $table) {
@@ -64,7 +65,7 @@ class AddForeignKeys extends Migration
 
         Schema::table('boards', function (Blueprint $table) {
             $table->dropForeign(['tower_id']);
-            $table->dropForeign(['owner_id']);
+            $table->dropForeign(['created_by']);
         });
     }
 }

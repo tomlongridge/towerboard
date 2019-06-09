@@ -27,14 +27,29 @@
                 </select>
             </div>
             <div class="row">
-                <label for="name">Website</label>
+                <label for="website_url">Website</label>
                 <input type="text" class="form-control" id="website_url" name="website_url" placeholder="http://www.yoursite.com"
                        value="{{ isset($board) ? $board->website : '' }}" />
             </div>
             <div class="row">
+                Who Can Post?
+                &nbsp;
+                <input type="radio" id="can_post_admin" name="can_post" value="{{ \App\Enums\SubscriptionType::ADMIN }}" />
+                &nbsp;
+                <label for="can_post_admin">Administrators</label>
+                &nbsp;
+                <input type="radio" id="can_post_members" name="can_post" value="{{ \App\Enums\SubscriptionType::MEMBER }}" />
+                &nbsp;
+                <label for="can_post_members">Members</label>
+            </div>
+            <div class="row">
                 <input type="submit" class="btn btn-primary" id="menu-toggle" value="Save" />
                 &nbsp;
-                <a href="{{ route('boards.details', [ 'board' => $board->name ]) }}" class="btn btn-secondary">Back</a>
+                @if(isset($board))
+                    <a href="{{ route('boards.details', [ 'board' => $board->name ]) }}" class="btn btn-secondary">Back</a>
+                @else
+                    <a href="{{ URL::previous() }}" class="btn btn-secondary">Back</a>
+                @endif
             </div>
         </form>
     </div>

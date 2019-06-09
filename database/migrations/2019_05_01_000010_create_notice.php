@@ -19,6 +19,7 @@ class CreateNotice extends Migration
             $table->string('title');
             $table->text('body');
             $table->unsignedBigInteger('board_id'); // FK->boards
+            $table->unsignedBigInteger('created_by');
 
             $table->softDeletes();
         });

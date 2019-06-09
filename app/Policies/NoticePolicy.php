@@ -29,9 +29,18 @@ class NoticePolicy
      * @param  \App\User  $user
      * @return mixed
      */
-    public function create(User $user)
+    public function create(User $user, Board $board)
     {
-        return $user != null;
+        if ($user == null) {
+            return false;
+        }
+
+        $subscription = $board->getSubscription($user);
+        if ($subscription == null) {
+            return false;
+        }
+
+        return $subscription->type->value >= $board->can_post;
     }
 
     /**
@@ -43,7 +52,7 @@ class NoticePolicy
      */
     public function update(User $user, Notice $notice)
     {
-        return $user->id == $notice->board->owner->id;
+        return $this->create($user, $notice->board);
     }
 
     /**
@@ -55,7 +64,7 @@ class NoticePolicy
      */
     public function delete(User $user, Notice $notice)
     {
-        return $user->id == $notice->board->owner->id;
+        return $this->create($user, $notice->board);
     }
 
     /**
@@ -67,7 +76,7 @@ class NoticePolicy
      */
     public function restore(User $user, Notice $notice)
     {
-        return $user->id == $notice->board->owner->id;
+        return $this->create($user, $notice->board);
     }
 
     /**

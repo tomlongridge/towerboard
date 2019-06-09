@@ -22,13 +22,13 @@ class BoardsTableSeeder extends Seeder{
 
         $assocBoardId = DB::table('boards')->insertGetId([
             'name' => 'Bath & Wells',
-            'owner_id' => $user->id,
+            'created_by' => $user->id,
             'type' => BoardType::GUILD,
         ]);
 
         $branchBoardId = DB::table('boards')->insertGetId([
             'name' => 'Bath Branch',
-            'owner_id' => $user->id,
+            'created_by' => $user->id,
             'type' => BoardType::BRANCH,
         ]);
 
@@ -39,14 +39,14 @@ class BoardsTableSeeder extends Seeder{
 
         DB::table('boards')->insert([
             'name' => 'Tom\' Quarter Pealers',
-            'owner_id' => $user->id,
+            'created_by' => $user->id,
         ]);
 
         $tower = Tower::where('area', '=', 'Bathwick')->first();
         $towerBoardId = DB::table('boards')->insertGetId([
             'name' => 'Bathwick',
             'website_url' => 'http://bathwick.brinkster.net',
-            'owner_id' => $user->id,
+            'created_by' => $user->id,
             'tower_id' => $tower->id,
             'type' => BoardType::TOWER,
         ]);
@@ -60,14 +60,16 @@ class BoardsTableSeeder extends Seeder{
             'board_id' => $towerBoardId,
             'title' => 'Practice Cancelled on Thursday 3rd May',
             'body' => 'There will be no practice on the 3rd May due to a choir practice',
-            'created_at' => Carbon::now()->subtract(7, 'day')
+            'created_at' => Carbon::now()->subtract(7, 'day'),
+            'created_by' => $user->id,
         ]);
 
         DB::table('notices')->insert([
             'board_id' => $towerBoardId,
             'title' => 'Tower Outing',
             'body' => 'We\`re going on an outing on the 7th September. Let me know if you want to come!',
-            'created_at' => Carbon::now()->subtract(3, 'day')
+            'created_at' => Carbon::now()->subtract(3, 'day'),
+            'created_by' => $user->id,
         ]);
 
         DB::table('board_subscriptions')->insert([

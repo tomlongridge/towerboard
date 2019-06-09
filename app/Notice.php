@@ -15,4 +15,9 @@ class Notice extends Model
     {
         return $this->belongsTo(Board::class);
     }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

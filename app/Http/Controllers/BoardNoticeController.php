@@ -10,11 +10,6 @@ use Notification;
 
 class BoardNoticeController extends Controller
 {
-    public function __construct()
-    {
-        $this->authorizeResource(Notice::class, 'notice');
-    }
-
     /**
      * Display a listing of the resource.
      *
@@ -32,6 +27,8 @@ class BoardNoticeController extends Controller
      */
     public function create(Board $board)
     {
+        $this->authorize('create', [Notice::class, $board]);
+
         return redirect(route("boards.show", ['board' => $board->name]));
     }
 
@@ -43,6 +40,8 @@ class BoardNoticeController extends Controller
      */
     public function store(Request $request, Board $board)
     {
+        $this->authorize('create', [Notice::class, $board]);
+
         $notice = $board->addNotice($this->validateFields($request));
 
         Notification::send($board->subscribers, new NoticeCreated($notice));
@@ -69,6 +68,8 @@ class BoardNoticeController extends Controller
      */
     public function edit(Board $board, Notice $notice)
     {
+        $this->authorize('update', [$notice, $board]);
+
         return view('notices.edit', compact('notice'));
     }
 
@@ -81,6 +82,8 @@ class BoardNoticeController extends Controller
      */
     public function update(Request $request, Board $board, Notice $notice)
     {
+        $this->authorize('update', [$notice, $board]);
+
         $notice->update($this->validateFields($request));
         return redirect(route('notices.show', ['board' => $board->name, 'notice' => $notice->id]));
     }
@@ -93,6 +96,8 @@ class BoardNoticeController extends Controller
      */
     public function destroy(Board $board, Notice $notice)
     {
+        $this->authorize('delete', [$notice, $board]);
+
         $notice->delete();
 
         return redirect(route("boards.show", ['board' => $board->name]));

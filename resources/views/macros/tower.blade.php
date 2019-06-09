@@ -3,7 +3,5 @@
 @else
     {{ $tower->town }},
 @endif
-{{ $tower->county }} ({{ $tower->country }}), {{ $tower->dedication }}
-{{ $tower->area ? ', ' . $tower->area : '' }},
-<strong>{{ $tower->num_bells }}</strong>
-{{ $tower->weight ? ', ' . $tower->weight : '' }}
+{{ $tower->county }} ({{ $tower->country }}), {{ $tower->dedication }}{{ $tower->area ? ', ' . $tower->area : '' }},
+<strong>{{ $tower->num_bells }}</strong>{{ $tower->weight ? ', ' . $tower->weight : '' }}

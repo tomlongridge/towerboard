@@ -11,6 +11,10 @@
             </div>
             <div class="col" style="text-align: right">
 
+                @subscriber($board)
+                    You are a {{ $board->getSubscription()->type->description }} of this board.
+                @endsubscriber
+
                 @section('subscribe')
                     <input type="submit" class="btn btn-primary" value="Subscribe" />
                 @endsection
