@@ -3,13 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Board;
+use App\Enums\SubscriptionType;
 use App\Notice;
-use App\Notifications\NoticeCreated;
+
+use BenSampo\Enum\Traits\CastsEnums;
+
 use Illuminate\Http\Request;
-use Notification;
+use App\Http\Requests\NoticeRequest;
 
 class BoardNoticeController extends Controller
 {
+    use CastsEnums;
+
+    protected $enumCasts = [
+        'distribution' => SubscriptionType::class
+    ];
+
     /**
      * Display a listing of the resource.
      *
@@ -38,13 +47,13 @@ class BoardNoticeController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request, Board $board)
+    public function store(NoticeRequest $request, Board $board)
     {
         $this->authorize('create', [Notice::class, $board]);
 
-        $notice = $board->addNotice($this->validateFields($request));
-
-        Notification::send($board->subscribers, new NoticeCreated($notice));
+        $board->addNotice($request->merge([
+            'created_by' => auth()->id(),
+        ])->all());
 
         return redirect(route('boards.show', ['board' => $board->name]));
     }
@@ -80,11 +89,11 @@ class BoardNoticeController extends Controller
      * @param  \App\Notice  $notice
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Board $board, Notice $notice)
+    public function update(NoticeRequest $request, Board $board, Notice $notice)
     {
         $this->authorize('update', [$notice, $board]);
 
-        $notice->update($this->validateFields($request));
+        $notice->update($request->all());
         return redirect(route('notices.show', ['board' => $board->name, 'notice' => $notice->id]));
     }
 
@@ -106,13 +115,5 @@ class BoardNoticeController extends Controller
     public function mail(Board $board, Notice $notice)
     {
         return new NoticeCreated($notice);
-    }
-
-    private function validateFields($request)
-    {
-        return $request->validate(
-            [ 'title' => 'required',
-              'body' => 'required' ]
-        );
     }
 }

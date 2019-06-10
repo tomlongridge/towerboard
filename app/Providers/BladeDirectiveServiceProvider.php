@@ -33,6 +33,10 @@ class BladeDirectiveServiceProvider extends ServiceProvider
             return $board->isMember();
         });
 
+        Blade::if('committee', function (Board $board) {
+            return $board->isCommittee();
+        });
+
         Blade::if('admin', function (Board $board) {
             return $board->isAdmin();
         });

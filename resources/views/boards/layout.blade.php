@@ -12,7 +12,7 @@
             <div class="col" style="text-align: right">
 
                 @subscriber($board)
-                    You are a {{ $board->getSubscription()->type->description }} of this board.
+                    You are {{ \App\Helpers\TowerBoardUtils::strToNoun($board->getSubscription()->type->description) }} of this board.
                 @endsubscriber
 
                 @section('subscribe')

@@ -9,6 +9,7 @@
             <thead>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Role</th>
                 <th>Action</th>
             </thead>
             <tbody>
@@ -22,10 +23,6 @@
                         </td>
                         <td>
                             @if($user->id != auth()->id())
-                                @section('inline-unsubscribe')
-                                    <input type="submit" class="btn btn-primary" value="Remove" />
-                                @endsection
-                                @include('macros.subscribe', [ 'unsubscribe' => 'inline-unsubscribe', 'board' => $board, 'user' => $user ])
                                 <form method="POST" action="{{ route('subscriptions.update', ['board' => $board, 'user' => $user]) }}" style="display: inline">
                                     @csrf
                                     @method('PATCH')
@@ -40,6 +37,12 @@
                                     </select>
                                 </form>
                             @endif
+                        </td>
+                        <td>
+                            @section('inline-unsubscribe')
+                                <input type="submit" class="btn btn-primary" value="Remove" />
+                            @endsection
+                            @include('macros.subscribe', [ 'unsubscribe' => 'inline-unsubscribe', 'board' => $board, 'user' => $user ])
                         </td>
                     </li>
                 @endforeach

@@ -4,6 +4,7 @@
 
     <p>{{ $notice->body }}</p>
     <p>Posted by: {{ $notice->createdBy->name }}</p>
+    <p>Visible to: {{ ucwords(str_plural($notice->distribution->description)) }}</p>
 
     @can('update', $notice)
 

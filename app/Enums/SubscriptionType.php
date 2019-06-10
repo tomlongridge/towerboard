@@ -6,18 +6,21 @@ use BenSampo\Enum\Enum;
 
 final class SubscriptionType extends Enum
 {
-    const BASIC  = 00;
-    const MEMBER = 10;
-    const ADMIN  = 20;
+    const BASIC     = 00;
+    const MEMBER    = 10;
+    const COMMITTEE = 20;
+    const ADMIN     = 30;
 
     public static function getDescription($value): string
     {
         if ($value === self::BASIC) {
-            return 'Subscriber';
+            return 'subscriber';
         } elseif ($value === self::MEMBER) {
-            return 'Member';
+            return 'member';
+        } elseif ($value === self::COMMITTEE) {
+            return 'committee member';
         } elseif ($value === self::ADMIN) {
-            return 'Administrator';
+            return 'administrator';
         }
 
         return parent::getDescription($value);

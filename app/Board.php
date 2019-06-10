@@ -81,6 +81,11 @@ class Board extends Model
         return $this->isSubscribed($user, SubscriptionType::MEMBER);
     }
 
+    public function isCommittee(User $user = null)
+    {
+        return $this->isSubscribed($user, SubscriptionType::COMMITTEE);
+    }
+
     public function isAdmin(User $user = null)
     {
         return $this->isSubscribed($user, SubscriptionType::ADMIN);

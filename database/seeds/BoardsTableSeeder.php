@@ -57,19 +57,22 @@ class BoardsTableSeeder extends Seeder{
         ]);
 
         DB::table('notices')->insert([
-            'board_id' => $towerBoardId,
-            'title' => 'Practice Cancelled on Thursday 3rd May',
-            'body' => 'There will be no practice on the 3rd May due to a choir practice',
-            'created_at' => Carbon::now()->subtract(7, 'day'),
-            'created_by' => $user->id,
-        ]);
-
-        DB::table('notices')->insert([
-            'board_id' => $towerBoardId,
-            'title' => 'Tower Outing',
-            'body' => 'We\`re going on an outing on the 7th September. Let me know if you want to come!',
-            'created_at' => Carbon::now()->subtract(3, 'day'),
-            'created_by' => $user->id,
+            [
+                'board_id' => $towerBoardId,
+                'title' => 'Practice Cancelled on Thursday 3rd May',
+                'body' => 'There will be no practice on the 3rd May due to a choir practice',
+                'created_at' => Carbon::now()->subtract(7, 'day'),
+                'created_by' => $user->id,
+                'distribution' => SubscriptionType::BASIC
+            ],
+            [
+                'board_id' => $towerBoardId,
+                'title' => 'Tower Outing',
+                'body' => 'We\`re going on an outing on the 7th September. Let me know if you want to come!',
+                'created_at' => Carbon::now()->subtract(3, 'day'),
+                'created_by' => $user->id,
+                'distribution' => SubscriptionType::MEMBER
+            ],
         ]);
 
         DB::table('board_subscriptions')->insert([

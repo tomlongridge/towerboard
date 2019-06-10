@@ -17,4 +17,9 @@ class TowerBoardUtils
 
         return $prefix . "...@..." . substr($emailSplit[1], 4);
     }
+
+    public static function strToNoun($word)
+    {
+        return 'a' . (starts_with(strtolower($word), ['a', 'e', 'i', 'o', 'u']) ? 'n' : '') . " ${word}";
+    }
 }

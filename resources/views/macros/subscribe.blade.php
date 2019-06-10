@@ -4,14 +4,11 @@
             @csrf
             @yield(isset($subscribe) ? $subscribe : 'subscribe')
         </form>
-        @else
-            @admin($board)
-            @else
-                <form method="POST" action="{{ route('subscriptions.destroy', ['board' => $board->name, 'user' => isset($user) ? $user : null ]) }}" style="display: inline">
-                    @csrf
-                    @method("DELETE")
-                    @yield(isset($unsubscribe) ? $unsubscribe : 'unsubscribe')
-                </form>
-            @endadmin
+    @elseif(isset($user) && $user->id != auth()->id())
+        <form method="POST" action="{{ route('subscriptions.destroy', ['board' => $board->name, 'user' => isset($user) ? $user : null ]) }}" style="display: inline">
+            @csrf
+            @method("DELETE")
+            @yield(isset($unsubscribe) ? $unsubscribe : 'unsubscribe')
+        </form>
     @endif
 @endauth
