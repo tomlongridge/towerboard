@@ -25,8 +25,7 @@ mix.js(['resources/js/app.js', 'resources/js/sb-admin-2.js'], 'public/js')
             '@fortawesome/fontawesome-free'
         ]);
 
-mix.sass('resources/sass/app.scss', 'public/css/app.css')
-   .sass('resources/sass/sb-admin-2.scss', 'public/css/app.css');
+mix.sass('resources/sass/app.scss', 'public/css/app.css');
 mix.less('node_modules/selectize/dist/less/selectize.less', 'public/css/vendor.css');
 mix.combine([
     'public/css/vendor.css',
