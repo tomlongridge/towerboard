@@ -16,6 +16,10 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::get('/sb2', function () {
+    return view('sb2');
+});
+
 // Authentication and accounts
 Auth::routes(['verify' => true]);
 Route::get('/account', 'UserController@edit')->name('accounts.edit')->middleware('verified');

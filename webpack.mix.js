@@ -11,15 +11,34 @@ const mix = require('laravel-mix');
  |
  */
 
-mix.js('resources/js/app.js', 'public/js')
-        .extract(['vue', 'bootstrap', 'selectize', 'list.js']);
+mix.js(['resources/js/app.js', 'resources/js/sb-admin-2.js'], 'public/js')
+        .extract([
+            'vue',
+            'bootstrap',
+            'selectize',
+            'list.js',
+            'datatables.net',
+            'datatables.net-bs4',
+            'jquery',
+            'jquery.easing',
+            'chart.js',
+            '@fortawesome/fontawesome-free'
+        ]);
 
-mix.sass('resources/sass/app.scss', 'public/css/app.css');
+mix.sass('resources/sass/app.scss', 'public/css/app.css')
+   .sass('resources/sass/sb-admin-2.scss', 'public/css/app.css');
 mix.less('node_modules/selectize/dist/less/selectize.less', 'public/css/vendor.css');
-mix.combine(['public/css/vendor.css', 'node_modules/bootstrap/dist/css/bootstrap.min.css'], 'public/css/vendor.css');
+mix.combine([
+    'public/css/vendor.css',
+    'node_modules/bootstrap/dist/css/bootstrap.min.css',
+    'node_modules/datatables.net-bs4/css/*.css',
+    'node_modules/@fortawesome/fontawesome-free/css/*.css',
+], 'public/css/vendor.css');
+mix.copyDirectory('node_modules/@fortawesome/fontawesome-free/webfonts', 'public/webfonts');
 
 if (mix.inProduction()) {
     mix.version();
 }
+
 
 mix.browserSync('127.0.0.1:8000');

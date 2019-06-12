@@ -46,7 +46,7 @@
                         <a href="{{ route("boards.show", ['board' => $board->name]) }}">{{ $board->name }}</a>
                     @endif
                     @if($board->isSubscribed())
-                        <i class="material-icons">star</i>
+                        <i>star</i>
                     @endif
                 </span>
             </li>
