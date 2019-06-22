@@ -2,23 +2,31 @@
 
 @section('content')
 
-    <h2>My Notices</h2>
+<div class="row">
 
-    @if(!$notices->isEmpty())
+  @foreach ($boards as $board)
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                          <a href="{{ route('boards.show', ['board' => $board->name]) }}">{{ $board->name }}</a>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        @include('macros.boardicon', ['board' => $board])
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  @endforeach
 
-        @foreach ($notices as $key => $noticeGroup)
-            <h3>{{ (new \Carbon\Carbon($key))->format('l jS F Y') }}</h3>
-            <ul>
-                @foreach ($noticeGroup as $notice)
-                    <li>
-                        {{ $notice->board->name }}:
-                        <a href="{{ route('notices.show', ['board' => $notice->board->name, 'notice' => $notice->id]) }}">{{ $notice->title }}</a>
-                    </li>
-                @endforeach
-            </ul>
-        @endforeach
-    @else
-        <p>There are no notices on this board.</p>
-    @endif
+  @if(!$notices->isEmpty())
+    @include('macros.noticelist', ['notices' => $notices, 'hideBoardName' => true])
+  @else
+    <p>There are no notices on this board.</p>
+  @endif
 
 @endsection

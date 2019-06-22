@@ -22,6 +22,10 @@ class CreateBoard extends Migration
             $table->unsignedBigInteger('created_by'); // FK->users
             $table->unsignedBigInteger('tower_id')->nullable(); // FK->towers
             $table->string('website_url')->nullable();
+            $table->string('address')->nullable();
+            $table->string('postcode')->nullable();
+            $table->float('latitude', 9, 6)->nullable();
+            $table->float('longitude', 9, 6)->nullable();
             $table->unsignedTinyInteger('can_post')->default(SubscriptionType::ADMIN);
 
             $table->softDeletes();

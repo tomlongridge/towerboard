@@ -38,7 +38,7 @@ class BoardNoticeController extends Controller
     {
         $this->authorize('create', [Notice::class, $board]);
 
-        return redirect(route("boards.show", ['board' => $board->name]));
+        return view("notices.edit", compact('board'));
     }
 
     /**

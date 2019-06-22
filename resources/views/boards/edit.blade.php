@@ -3,12 +3,12 @@
 @section('content')
 
     <div class="container">
-        @if(isset($board))
+        @isset($board)
             <form method="POST" action="{{ route('boards.update', ['board' => $board->name]) }}">
             @method('PATCH')
         @else
             <form method="POST" action="{{ route('boards.store') }}">
-        @endif
+        @endisset
             @csrf
 
             <div class="row">
@@ -19,11 +19,11 @@
             <div class="row">
                 <label for="name">Tower</label>
                 <select id="tower" name="tower_id" class="tb-dropdown">
-                    @if(isset($board))
+                    @isset($board)
                         <option value="{{ $board->tower_id }}" selected="selected">
                             @include('macros.tower', ['tower' => $board->tower])
                         </option>
-                    @endif
+                    @endisset
                 </select>
             </div>
             <div class="row">

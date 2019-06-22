@@ -17,6 +17,18 @@ class BoardPolicy
      * @param  \App\Board  $board
      * @return mixed
      */
+    public function viewAny(?User $user)
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can view the board.
+     *
+     * @param  \App\User  $user
+     * @param  \App\Board  $board
+     * @return mixed
+     */
     public function view(?User $user, Board $board)
     {
         return true;

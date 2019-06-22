@@ -46,6 +46,10 @@ class BoardsTableSeeder extends Seeder{
         $towerBoardId = DB::table('boards')->insertGetId([
             'name' => 'Bathwick',
             'website_url' => 'http://bathwick.brinkster.net',
+            'address' => 'Darlington St, Bath',
+            'postcode' => 'BA2 4EB',
+            'latitude' => -2.351199,
+            'longitude' => 51.384340,
             'created_by' => $user->id,
             'tower_id' => $tower->id,
             'type' => BoardType::TOWER,
@@ -54,25 +58,6 @@ class BoardsTableSeeder extends Seeder{
         DB::table('board_affiliates')->insert([
             'board_id' => $towerBoardId,
             'affiliate_id' => $branchBoardId
-        ]);
-
-        DB::table('notices')->insert([
-            [
-                'board_id' => $towerBoardId,
-                'title' => 'Practice Cancelled on Thursday 3rd May',
-                'body' => 'There will be no practice on the 3rd May due to a choir practice',
-                'created_at' => Carbon::now()->subtract(7, 'day'),
-                'created_by' => $user->id,
-                'distribution' => SubscriptionType::BASIC
-            ],
-            [
-                'board_id' => $towerBoardId,
-                'title' => 'Tower Outing',
-                'body' => 'We\`re going on an outing on the 7th September. Let me know if you want to come!',
-                'created_at' => Carbon::now()->subtract(3, 'day'),
-                'created_by' => $user->id,
-                'distribution' => SubscriptionType::MEMBER
-            ],
         ]);
 
         DB::table('board_subscriptions')->insert([

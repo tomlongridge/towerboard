@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use App\Board;
 
+use Illuminate\Support\Facades\Route;
+
 class BladeDirectiveServiceProvider extends ServiceProvider
 {
     /**
@@ -39,6 +41,10 @@ class BladeDirectiveServiceProvider extends ServiceProvider
 
         Blade::if('admin', function (Board $board) {
             return $board->isAdmin();
+        });
+
+        Blade::directive('activeLink', function ($route) {
+            return "<?php echo (Route::is($route) ? 'active' : '') ?>";
         });
     }
 }

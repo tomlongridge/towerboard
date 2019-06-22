@@ -22,7 +22,9 @@ mix.js(['resources/js/app.js', 'resources/js/sb-admin-2.js'], 'public/js')
             'jquery',
             'jquery.easing',
             'chart.js',
-            '@fortawesome/fontawesome-free'
+            '@fortawesome/fontawesome-free',
+            'bootstrap-select',
+            'mapbox-gl'
         ]);
 
 mix.sass('resources/sass/app.scss', 'public/css/app.css');
@@ -32,6 +34,8 @@ mix.combine([
     'node_modules/bootstrap/dist/css/bootstrap.min.css',
     'node_modules/datatables.net-bs4/css/*.css',
     'node_modules/@fortawesome/fontawesome-free/css/*.css',
+    'node_modules/bootstrap-select/dist/css/bootstrap-select.css',
+    'node_modules/mapbox-gl/dist/mapbox-gl.css',
 ], 'public/css/vendor.css');
 mix.copyDirectory('node_modules/@fortawesome/fontawesome-free/webfonts', 'public/webfonts');
 

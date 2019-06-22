@@ -2,7 +2,7 @@
 
 @section('content')
 
-    <p>{{ $notice->body }}</p>
+    <p>{!! clean($notice->body) !!}</p>
     <p>Posted by: {{ $notice->createdBy->name }}</p>
     <p>Visible to: {{ ucwords(str_plural($notice->distribution->description)) }}</p>
 

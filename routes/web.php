@@ -12,13 +12,7 @@
 */
 
 // Home
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
-
-Route::get('/sb2', function () {
-    return view('sb2');
-});
+Route::get('/', 'HomeController@index')->name('home');
 
 // Authentication and accounts
 Auth::routes(['verify' => true]);
@@ -37,7 +31,6 @@ Route::get('/boards/{board}/contact', 'BoardController@contact')->name('boards.c
 Route::get('/boards/{board}/members', 'BoardController@members')->name('boards.members');
 
 // Notices
-Route::get('/notices', 'UserNoticeController@index')->name('users.notices');
 Route::resource('/boards/{board}/notices', 'BoardNoticeController');
 // Route::get('/boards/{board}/notices/{notice}/mail', 'BoardNoticeController@mail');
 

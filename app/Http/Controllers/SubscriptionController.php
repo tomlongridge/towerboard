@@ -9,7 +9,6 @@ use App\Http\Requests\EmailListRequest;
 
 use Auth;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use App\Enums\SubscriptionType;
 
 class SubscriptionController extends Controller

@@ -4,52 +4,42 @@
 
     <div id="boards-list">
 
-        <h2>Search</h2>
-
-        <p>
-            <input class="search" class="form-control" style="width: 300px" placeholder="Tower, guild, branch name..." />
-        </p>
-
-        <h3>Board Types</h3>
-        <ul class="radio-list">
-            <li>
-                <input type="radio" name="type" id="board-type-all" value="*" checked />
-                <label for="board-type-all">All</label>
-            </li>
-            <li>
-                <input type="radio" name="type" id="board-type-towers" value="{{ \App\Enums\BoardType::getKey(\App\Enums\BoardType::TOWER) }}" />
-                <label for="board-type-towers">Towers</label>
-            </li>
-            <li>
-                <input type="radio" name="type" id="board-type-guilds" value="{{ \App\Enums\BoardType::getKey(\App\Enums\BoardType::GUILD) }}" />
-                <label for="board-type-guilds">Guilds/Associations</label>
-            </li>
-            <li>
-                <input type="radio" name="type" id="board-type-branches" value="{{ \App\Enums\BoardType::getKey(\App\Enums\BoardType::BRANCH) }}" />
-                <label for="board-type-branches">Branches/Districts</label>
-            </li>
-            <li>
-                <input type="radio" name="type" id="board-type-other" value="" />
-                <label for="board-type-other">Other</label>
-            </li>
-        </ul>
-
-        <hr />
+    <div class="card mb-4">
+      <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Filter</h6>
+      </div>
+      <div class="card-body row">
+          <div class="col-12 col-md-6">
+        <input class="search" id="board-name" class="form-control" style="width: 100%" placeholder="Tower, guild, branch name..." value="{{ request('q') }}" />
+          </div>
+          <div class="col-12 col-md-6">
+        <select class="selectpicker" id="board-type">
+            <option value="*">All Types</option>
+            <option value="{{ \App\Enums\BoardType::getKey(\App\Enums\BoardType::TOWER) }}">Towers</option>
+            <option value="{{ \App\Enums\BoardType::getKey(\App\Enums\BoardType::GUILD) }}">Guilds/Associations</option>
+            <option value="{{ \App\Enums\BoardType::getKey(\App\Enums\BoardType::BRANCH) }}">Branches/Districts</option>
+            <option value="">Other</option>
+        </select>
+    </div>
+      </div>
+    </div>
 
         <ul class="list">
         @foreach($boards as $board)
-            <li data-type="{{ \App\Enums\BoardType::getKey($board->type) }}">
-                <span class="tower-item">
-                    @if($board->tower)
-                        @include('macros.tower', ['tower' => $board->tower, 'url' => route('boards.show', ['board' => $board->name])])
-                    @else
-                        <a href="{{ route("boards.show", ['board' => $board->name]) }}">{{ $board->name }}</a>
-                    @endif
-                    @if($board->isSubscribed())
-                        <i>star</i>
-                    @endif
-                </span>
-            </li>
+          <div class="card border-left-primary shadow h-100 my-4" data-type="{{ \App\Enums\BoardType::getKey($board->type) }}">
+            <div class="card-body">
+              <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                  <span class="tower-item">
+                      @include('macros.board', ['board' => $board, 'route' => 'boards.show'])
+                  </span>
+                </div>
+                <div class="col-auto">
+                  @include('macros.boardicon', ['board' => $board])
+                </div>
+              </div>
+            </div>
+          </div>
         @endforeach
         </ul>
 
@@ -68,8 +58,8 @@
             valueNames: [ 'tower-item', { data: ['type'] } ]
         };
         var boardList = new List('boards-list', options);
-        $('input[name=type]').change(function() {
-            var boardType = $('input[name=type]:checked').val();
+        $('#board-type').change(function() {
+            var boardType = $('#board-type').val();
             boardList.filter(function(item) {
                 if (boardType === "*") {
                     return true;
@@ -78,6 +68,7 @@
                 }
             });
         });
+        boardList.search($('#board-name').val());
     </script>
 
 @endsection

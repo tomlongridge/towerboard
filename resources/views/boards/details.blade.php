@@ -1,46 +1,156 @@
-@extends('boards.layout')
+@extends('layouts.app', ['title' => $board->name, 'activeBoard' => $board])
 
-@section('subcontent')
+@section('content')
 
-    @if($board->tower)
-        <p>@include('macros.tower', ['tower' => $board->tower])</p>
-    @endif
+  <div class="card border-left-primary shadow h-100 py-2 my-4">
+    <div class="card-body">
+      <div class="row no-gutters align-items-center">
+        <div class="col mr-2">
+          <div class="h5 mb-0 font-weight-bold text-gray-800">
+            @include('macros.board', ['board' => $board])
+          </div>
+        </div>
+        <div class="col-auto">
+          @include('macros.boardicon', ['board' => $board])
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <div class="row d-flex flex-wrap">
 
-    @if($board->website_url)
-        <p><a href="{{ $board->website_url }}">Go to website&hellip;</a></p>
-    @endif
+    <div class="col-lg-4 d-flex flex-col">
+      <div class="card shadow mb-4 w-100">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">Website</h6>
+        </div>
+        <div class="card-body">
+          @isset($board->website_url)
+            <a href="{{ $board->website_url }}" target="_blank">{{ $board->website_url }}</a>
+          @else
+            None
+          @endisset
+        </div>
+      </div>
+    </div>
 
+    <div class="col-lg-4 d-flex flex-col ">
+      <div class="card shadow mb-4 w-100">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">Address</h6>
+        </div>
+        <div class="card-body">
+          <p>
+            @isset($board->address)
+              {{ $board->address }}<br />
+            @endisset
+            @isset($board->postcode)
+              {{ $board->postcode }}
+            @endisset
+            @if(!isset($board->address) && !isset($board->postcode))
+              Unknown
+            @endif
+          </p>
+          @isset($board->longitude)
+            <p>
+              <a href="https://www.google.com/maps/search/?api=1&query={{ $board->longitude }},{{ $board->latitude }}" target="_blank">View Map</a>
+            </p>
+          @endisset
+        </div>
+      </div>
+    </div>
 
-    @if(!$board->affiliatedTo->isEmpty())
-        <h2>Affiliated To</h2>
-        <ul>
-            @foreach($board->affiliatedTo as $affiliate)
-                <li><a href="{{ route('boards.show', ['board' => $affiliate->name]) }}">{{ $affiliate->name }}</a></li>
-            @endforeach
-        </ul>
-    @endif
+    <div class="col-lg-4 d-flex flex-col">
+      <div class="card shadow mb-4 w-100">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">Map</h6>
+        </div>
+        @isset($board->latitude)
+          <div class="card-body" id="map" style="padding: 0px; height:400px"></div>
+        @else
+          <div class="card-body">Unknown</div>
+        @endisset
+      </div>
+    </div>
+  </div>
 
-    @can('update', $board)
-        <a class="btn btn-primary" href="{{ route('boards.edit', ['board' => $board->name]) }}">Edit</a>
+  <h2>Affiliations</h2>
+  @if(!$board->affiliatedTo->isEmpty())
+    <div class="row">
+      @foreach($board->affiliatedTo as $affiliate)
+        <div class="col-lg-3">
+          <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+              <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                  <div class="mb-0 text-gray-800">
+                    @include('macros.board', ['board' => $affiliate, 'route' => 'boards.details'])
+                  </div>
+                </div>
+                <div class="col-auto">
+                  @include('macros.boardicon', ['board' => $affiliate])
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      @endforeach
+    </div>
+  @else
+      <p>None</p>
+  @endif
 
-        <form method="POST" action="{{ route('boards.destroy', ['board' => $board->name]) }}" style="display: inline">
-            @method("DELETE")
-            @csrf
-            <input type="submit" class="btn btn-primary" value="Delete" />
-        </form>
-    @endcan
+  @can('update', $board)
+  <div>
+      <a class="btn btn-primary" href="{{ route('boards.edit', ['board' => $board->name]) }}">Edit</a>
 
-    @if(!$board->affiliates->isEmpty())
-        <h2>Affiliated Boards</h2>
-        <p>
-            Affiliates:
-            <ul>
-            @foreach($board->affiliates  as $affiliate)
-                <li><a href="{{ route('boards.show', ['board' => $affiliate->name]) }}">{{ $affiliate->name }}</a></li>
-            @endforeach
-            </ul>
-        </p>
-    @endif
+      <form method="POST" action="{{ route('boards.destroy', ['board' => $board->name]) }}" style="display: inline">
+          @method("DELETE")
+          @csrf
+          <input type="submit" class="btn btn-primary" value="Delete" />
+      </form>
+    </div>
+  @endcan
 
+  <h2>Affiliated Boards</h2>
+  @if(!$board->affiliates->isEmpty())
+    <div class="row">
+      @foreach($board->affiliates as $affiliate)
+        <div class="col-lg-4">
+          <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+              <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                  <div class="mb-0 text-gray-800">
+                    @include('macros.board', ['board' => $affiliate, 'route' => 'boards.details', 'full' => false])
+                  </div>
+                </div>
+                <div class="col-auto">
+                  @include('macros.boardicon', ['board' => $affiliate])
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      @endforeach
+    </div>
+  @else
+      <p>None</p>
+  @endif
+
+@endsection
+
+@section('pagescripts')
+  @isset($board->latitude)
+    <script>
+      mapboxgl.accessToken = "{{ env('MAPBOX_API_KEY') }}";
+      var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [{{ $board->latitude }}, {{ $board->longitude }}],
+        zoom: 15
+      });
+      new mapboxgl.Marker().setLngLat([{{ $board->latitude }}, {{ $board->longitude }}]).addTo(map);
+    </script>
+  @endisset
 @endsection
