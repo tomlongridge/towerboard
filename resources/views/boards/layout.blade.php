@@ -1,43 +1,22 @@
-@extends('layouts.app', ['title' => $board->name])
+@extends('layouts.app', ['title' => $board->name, 'activeBoard' => $board])
 
 @section('content')
 
-    <div class="container-fluid">
-        <div class="row subscribe">
-            <div class="col">
-                @if($board->tower)
-                    <p>@include('macros.tower', ['tower' => $board->tower])</p>
-                @endif
-            </div>
-            <div class="col" style="text-align: right">
-
-                @subscriber($board)
-                    You are {{ \App\Helpers\TowerBoardUtils::strToNoun($board->getSubscription()->type->description) }} of this board.
-                @endsubscriber
-
-                @section('subscribe')
-                    <input type="submit" class="btn btn-primary" value="Subscribe" />
-                @endsection
-                @section('unsubscribe')
-                    <input type="submit" class="btn btn-primary" value="Unsubscribe" />
-                @endsection
-                @include('macros.subscribe', [ 'board' => $board, 'user' => null])
-
-            </div>
+  <div class="card border-left-primary shadow h-100 py-2 my-4">
+    <div class="card-body">
+      <div class="row no-gutters align-items-center">
+        <div class="col mr-2">
+          <div class="h5 mb-0 font-weight-bold text-gray-800">
+            @include('macros.board', ['board' => $board])
+          </div>
         </div>
-        <div class="row board-nav">
-            <div class="col {{ Route::currentRouteName() == 'boards.show' ? 'selected' : '' }}"><a href="{{ route('boards.show', ['board' => $board->name]) }}">Notices</a></div>
-            <div class="col {{ Route::currentRouteName() == 'boards.committee' ? 'selected' : '' }}"><a href="{{ route('boards.committee', ['board' => $board->name]) }}">Committee</a></div>
-            <div class="col {{ Route::currentRouteName() == 'boards.details' ? 'selected' : '' }}">
-                <a href="{{ route('boards.details', ['board' => $board->name]) }}">
-                    {{ \App\Enums\BoardType::getDescription($board->type) }} Details
-                </a>
-            </div>
-            <div class="col {{ Route::currentRouteName() == 'boards.members' ? 'selected' : '' }}"><a href="{{ route('boards.members', ['board' => $board->name]) }}">Members</a></div>
-            <div class="col {{ Route::currentRouteName() == 'boards.contact' ? 'selected' : '' }}"><a href="{{ route('boards.contact', ['board' => $board->name]) }}">Contact</a></div>
+        <div class="col-auto">
+          @include('macros.boardicon', ['board' => $board])
         </div>
+      </div>
     </div>
+  </div>
 
-    @yield('subcontent')
+  @yield('subcontent')
 
 @endsection

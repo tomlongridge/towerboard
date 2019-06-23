@@ -1,63 +1,139 @@
-@extends('boards.layout')
+@extends('boards.layout', ['title' => 'Edit Notice', 'activeBoard' => $board])
 
 @section('subcontent')
 
-    <h2>Members</h2>
+  <div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Members</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">
+                  {{ $board->members->count() }}
+              </div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-user-friends fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Subscribers</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">
+                  {{ $board->subscribers->count() - $board->members->count() }}
+              </div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-6 col-md-12 mb-4">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="h5 mb-0 text-gray-800">
+                  @subscriber($board)
+                    You are {{ \App\Helpers\TowerBoardUtils::strToNoun($board->getSubscription()->type->description) }} of this board
+                  @else
+                    You are not subscribed to this board
+                  @endsubscriber
+              </div>
+            </div>
+            <div class="col-auto">
+                @admin($board)
+                @else
+                  @section('subscribe')
+                    <button type="submit" class="btn btn-primary btn-icon-split">
+                      <span class="icon text-white-50"><i class="fas fa-star"></i></span>
+                      <span class="text">Subscribe</span>
+                    </button>
+                  @endsection
+                  @section('unsubscribe')
+                    <button type="submit" class="btn btn-primary btn-icon-split">
+                      <span class="icon text-white-50"><i class="far fa-star"></i></span>
+                      <span class="text">Unsubscribe</span>
+                    </button>
+                  @endsection
+                  @include('macros.subscribe', [ 'board' => $board, 'user' => null])
+                @endadmin
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    @admin($board)
-        <table>
+
+  <div class="card shadow mb-4">
+      <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Members</h6>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
             <thead>
+              <tr>
                 <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Action</th>
+                <th>Membership</th>
+                @admin($board)
+                  <th>Email</th>
+                  <th>Action</th>
+                @endadmin
+              </tr>
             </thead>
             <tbody>
-                @foreach($board->subscribers as $user)
-                    <tr>
-                        <td>
-                            {{ $user->name }}
-                        </td>
-                        <td>
-                            {{ TowerBoardUtils::obscureEmail($user->email) }}
-                        </td>
-                        <td>
-                            @if($user->id != auth()->id())
-                                <form method="POST" action="{{ route('subscriptions.update', ['board' => $board, 'user' => $user]) }}" style="display: inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <select name="type" onchange="this.form.submit()">
-                                        @foreach (\App\Enums\SubscriptionType::getInstances() as $type)
-                                            <option
-                                                value="{{ $type->value }}"
-                                                {{ $type->key == $user->subscription->type->key ? 'selected' : ''}}>
-                                                {{ $type->description }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </form>
-                            @endif
-                        </td>
-                        <td>
-                            @section('inline-unsubscribe')
-                                <input type="submit" class="btn btn-primary" value="Remove" />
-                            @endsection
-                            @include('macros.subscribe', [ 'unsubscribe' => 'inline-unsubscribe', 'board' => $board, 'user' => $user ])
-                        </td>
-                    </li>
-                @endforeach
+              @foreach($board->subscribers as $user)
+                <tr>
+                  <td>{{ $user->name }}</td>
+                  <td>
+                    @admin($board)
+                      @if($user->id != auth()->id())
+                          <form method="POST" action="{{ route('subscriptions.update', ['board' => $board, 'user' => $user]) }}" style="display: inline">
+                              @csrf
+                              @method('PATCH')
+                              <select name="type" onchange="this.form.submit()">
+                                  @foreach (\App\Enums\SubscriptionType::getInstances() as $type)
+                                      <option
+                                          value="{{ $type->value }}"
+                                          {{ $type->key == $user->subscription->type->key ? 'selected' : ''}}>
+                                          {{ ucwords($type->description) }}
+                                      </option>
+                                  @endforeach
+                              </select>
+                          </form>
+                      @endif
+                    @else
+                      {{ ucwords($user->subscription->type->description) }}
+                    @endadmin
+                  </td>
+                  @admin($board)
+                    <td>{{ TowerBoardUtils::obscureEmail($user->email) }}</td>
+                    <td>
+                      @section('inline-unsubscribe')
+                          <input type="submit" class="btn btn-primary" value="Remove" />
+                      @endsection
+                      @include('macros.subscribe', [ 'unsubscribe' => 'inline-unsubscribe', 'board' => $board, 'user' => $user ])
+                    </td>
+                  @endadmin
+                </tr>
+              @endforeach
             </tbody>
-        </table>
-    @else
-        <p>{{ $board->subscribers->count() }} members on Towerboard.</p>
-    @endif
+          </table>
+        </div>
+      </div>
+    </div>
 
-    <h2>Board Administrators</h2>
-    <ul>
-        @foreach($board->administrators()->get() as $admin)
-            <li>{{ $admin->name }}</li>
-        @endforeach
-    </ul>
 
     @can('update', $board)
         <h2>Add Users</h2>

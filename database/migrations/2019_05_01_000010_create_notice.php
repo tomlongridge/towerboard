@@ -19,6 +19,7 @@ class CreateNotice extends Migration
             $table->timestamps();
             $table->string('title');
             $table->text('body');
+            $table->date('expires')->nullable();
             $table->unsignedBigInteger('board_id'); // FK->boards
             $table->unsignedBigInteger('created_by');
             $table->unsignedTinyInteger('distribution')->default(SubscriptionType::BASIC);

@@ -12,6 +12,7 @@ require('datatables.net-bs4');
 require('chart.js');
 require('@fortawesome/fontawesome-free');
 require('bootstrap-select');
+require('bootstrap-datepicker');
 window.mapboxgl = require('mapbox-gl');
 window.List = require('list.js');
 window.Vue = require('vue');

@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Carbon\Carbon;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -53,7 +54,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'board_id',
             'id',
             'board_id'
-        );
+        )->where('expires', null)
+         ->orWhere('expires', '<', Carbon::now());
     }
 
     public function getNameAttribute()

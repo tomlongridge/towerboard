@@ -79,7 +79,7 @@ class BoardNoticeController extends Controller
     {
         $this->authorize('update', [$notice, $board]);
 
-        return view('notices.edit', compact('notice'));
+        return view('notices.edit', compact('notice', 'board'));
     }
 
     /**

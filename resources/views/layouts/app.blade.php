@@ -35,31 +35,31 @@
 
       @isset($activeBoard)
 
-        <li class="nav-item {{ Route::is('boards.show') ? 'active' : '' }}">
-          <a class="nav-link" href="{{ route('boards.show', ['board' => $board]) }}">
+        <li class="nav-item {{ Route::is('boards.show') || Route::is('notices.show') ? 'active' : '' }}">
+          <a class="nav-link" href="{{ route('boards.show', ['board' => $activeBoard]) }}">
             <i class="fas fa-fw fa-chalkboard"></i><span>Notice Board</span>
           </a>
         </li>
-        @can('create', [\App\Notice::class, $board])
+        @can('create', [\App\Notice::class, $activeBoard])
           <li class="nav-item {{ Route::is('notices.create') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('notices.create', ['board' => $board]) }}">
+            <a class="nav-link" href="{{ route('notices.create', ['board' => $activeBoard]) }}">
               <i class="fas fa-fw fa-plus"></i><span>Add Notice</span>
             </a>
           </li>
         @endcan
         <li class="nav-item {{ Route::is('boards.details') ? 'active' : '' }}">
-          <a class="nav-link" href="{{ route('boards.details', ['board' => $board]) }}">
-            <i class="fas fa-fw fa-chart-area"></i><span>About</span>
+          <a class="nav-link" href="{{ route('boards.details', ['board' => $activeBoard]) }}">
+            <i class="fas fa-fw fa-info-circle"></i><span>About</span>
           </a>
         </li>
         <li class="nav-item {{ Route::is('boards.members') ? 'active' : '' }}">
-          <a class="nav-link" href="{{ route('boards.members', ['board' => $board]) }}">
-            <i class="fas fa-fw fa-chart-area"></i><span>Members</span>
+          <a class="nav-link" href="{{ route('boards.members', ['board' => $activeBoard]) }}">
+            <i class="fas fa-fw fa-user-friends"></i><span>Members</span>
           </a>
         </li>
         <li class="nav-item {{ Route::is('boards.contact') ? 'active' : '' }}">
-          <a class="nav-link" href="{{ route('boards.contact', ['board' => $board]) }}">
-            <i class="fas fa-fw fa-chart-area"></i><span>Contact</span>
+          <a class="nav-link" href="{{ route('boards.contact', ['board' => $activeBoard]) }}">
+            <i class="fas fa-fw fa-envelope-open"></i><span>Contact</span>
           </a>
         </li>
 
@@ -164,12 +164,6 @@
 
         <!-- Begin Page Content -->
         <div id="app" class="container-fluid">
-
-          @isset($heading)
-            <div class="d-sm-flex align-items-center justify-content-between mb-4">
-              <h1 class="h3 mb-0 text-gray-800">{{ $heading }}</h1>
-            </div>
-          @endisset
 
           @yield('content')
 

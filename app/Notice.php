@@ -3,6 +3,7 @@
 namespace App;
 
 use BenSampo\Enum\Traits\CastsEnums;
+use Carbon\Carbon;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -45,5 +46,10 @@ class Notice extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getExpiresAttribute($expires)
+    {
+        return $expires != null ? new Carbon($expires) : null;
     }
 }

@@ -24,7 +24,8 @@ mix.js(['resources/js/app.js', 'resources/js/sb-admin-2.js'], 'public/js')
             'chart.js',
             '@fortawesome/fontawesome-free',
             'bootstrap-select',
-            'mapbox-gl'
+            'mapbox-gl',
+            'bootstrap-datepicker'
         ]);
 
 mix.sass('resources/sass/app.scss', 'public/css/app.css');
@@ -36,6 +37,7 @@ mix.combine([
     'node_modules/@fortawesome/fontawesome-free/css/*.css',
     'node_modules/bootstrap-select/dist/css/bootstrap-select.css',
     'node_modules/mapbox-gl/dist/mapbox-gl.css',
+    'node_modules/bootstrap-datepicker/dist/css/bootstrap-datepicker3.css',
 ], 'public/css/vendor.css');
 mix.copyDirectory('node_modules/@fortawesome/fontawesome-free/webfonts', 'public/webfonts');
 

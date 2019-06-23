@@ -70,7 +70,9 @@ class BoardController extends Controller
      */
     public function show(Board $board)
     {
-        return view('boards.show', compact('board'));
+        $notices = $board->getNotices(auth()->user()->can('update', $board));
+
+        return view('boards.show', compact('board', 'notices'));
     }
 
     public function committee(Board $board)

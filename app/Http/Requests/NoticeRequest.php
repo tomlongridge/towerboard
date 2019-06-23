@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 use BenSampo\Enum\Rules\EnumValue;
 use App\Enums\SubscriptionType;
+use Carbon\Carbon;
 
 class NoticeRequest extends FormRequest
 {
@@ -18,6 +19,7 @@ class NoticeRequest extends FormRequest
     {
         $this->merge([
             'distribution' => intval($this->distribution),
+            'expires' => Carbon::createFromFormat('d/m/Y', $this->expires),
         ]);
     }
 

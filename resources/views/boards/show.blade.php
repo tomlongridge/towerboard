@@ -1,24 +1,57 @@
-@extends('layouts.app', ['title' => $board->name, 'activeBoard' => $board])
+@extends('boards.layout', ['title' => 'Edit Notice', 'activeBoard' => $board])
 
-@section('content')
+@section('subcontent')
 
-  <div class="card border-left-primary shadow h-100 py-2 my-4">
-    <div class="card-body">
-      <div class="row no-gutters align-items-center">
-        <div class="col mr-2">
-          <div class="h5 mb-0 font-weight-bold text-gray-800">
-            @include('macros.board', ['board' => $board])
+  @if(!$notices->isEmpty())
+
+    @foreach ($notices as $key => $notice)
+
+      @if ($loop->iteration % 2 == 1)
+        <div class="row">
+      @endif
+
+      @include('macros.notice', ['notice' => $notice, 'hideBoardName' => true])
+
+      @if ($loop->iteration % 2 == 0)
+        </div>
+      @endif
+
+    @endforeach
+
+    @can('create', [\App\Notice::class, $board])
+      @if ($notices->count() % 2 == 0)
+        <div class="row">
+      @endif
+        <div class="col-lg-6">
+          <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+              <div class="dropdown no-arrow">
+                &nbsp;
+              </div>
+            </div>
+            <div class="card-body text-center py-5">
+                <a href="{{ route('notices.create', ['board' => $board ]) }}" class="btn btn-primary btn-icon-split">
+                    <span class="icon text-white-50">
+                      <i class="fas fa-plus"></i>
+                    </span>
+                    <span class="text">Add Notice</span>
+                  </a>
+            </div>
           </div>
         </div>
-        <div class="col-auto">
-          @include('macros.boardicon', ['board' => $board])
-        </div>
-      </div>
-    </div>
-  </div>
 
-  @if(!$board->notices->isEmpty())
-    @include('macros.noticelist', ['notices' => $board->notices])
+      @if ($notices->count() % 2 == 0)
+        <div class="col-lg-6"></div>
+      @endif
+      </div>
+
+    @else
+      @if ($notices->count() % 2 == 1)
+          <div class="col-lg-6"></div>
+        </div>
+      @endif
+    @endcan
+
   @else
       <p>There are no notices on this board.</p>
   @endif

@@ -1,0 +1,20 @@
+// #page-top > div.datepicker.datepicker-dropdown.dropdown-menu.datepicker-orient-left.datepicker-orient-top > div.datepicker-days > table > tbody > tr:nth-child(2) > td:nth-child(4)
+// .datepicker-days {
+//   .disabled {
+//     color: red
+//   }
+// }
+
+.datepicker {
+  table tr td.disabled,
+  table tr td.disabled:hover {
+    background: lightgrey;
+    border-radius: 0px;
+  }
+  .datepicker-switch,
+  .datepicker-switch:hover {
+    background: $blue;
+    color: white;
+  }
+}
+

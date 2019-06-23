@@ -2,11 +2,12 @@
 
 namespace App;
 
+use App\Enums\SubscriptionType;
 use App\User;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Enums\SubscriptionType;
 
 class Board extends Model
 {
@@ -91,6 +92,16 @@ class Board extends Model
         return $this->isSubscribed($user, SubscriptionType::ADMIN);
     }
 
+    public function getNotices($expired = false)
+    {
+        $allNotices = $this->notices();
+        if (!$expired) {
+            $allNotices->where('expires', null)
+                       ->orWhere('expires', '<', Carbon::now());
+        }
+        return $allNotices->get();
+    }
+
     public function notices()
     {
         return $this->hasMany(Notice::class);
@@ -114,6 +125,12 @@ class Board extends Model
     {
         return $this->subscribers()
             ->wherePivot('type', '>=', SubscriptionType::MEMBER);
+    }
+
+    public function committeeMembers()
+    {
+        return $this->subscribers()
+            ->wherePivot('type', '>=', SubscriptionType::COMMITTEE);
     }
 
     public function administrators()
