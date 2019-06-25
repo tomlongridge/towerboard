@@ -54,8 +54,10 @@ class User extends Authenticatable implements MustVerifyEmail
             'board_id',
             'id',
             'board_id'
-        )->where('expires', null)
-         ->orWhere('expires', '<', Carbon::now());
+        )->where(function ($query) {
+            $query->whereNull('expires')
+                  ->orWhere('expires', '>', Carbon::now());
+        });
     }
 
     public function getNameAttribute()

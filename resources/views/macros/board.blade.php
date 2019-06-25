@@ -1,7 +1,7 @@
 @isset($route)
   <a href="{{ route($route, ['board' => $board->name]) }}">
 @endisset
-{{ $board->name }}
+{{ $board->readable_name }}
 @isset($route)
   </a>
 @endisset

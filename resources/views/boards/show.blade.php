@@ -2,8 +2,6 @@
 
 @section('subcontent')
 
-  @if(!$notices->isEmpty())
-
     @foreach ($notices as $key => $notice)
 
       @if ($loop->iteration % 2 == 1)
@@ -52,8 +50,9 @@
       @endif
     @endcan
 
-  @else
+    @can('create', [\App\Notice::class, $board])
+    @elseif($notices->isEmpty())
       <p>There are no notices on this board.</p>
-  @endif
+    @endif
 
 @endsection

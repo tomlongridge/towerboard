@@ -3,7 +3,7 @@
     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
       <h6 class="m-0 font-weight-bold text-primary">
         @if(!(isset($hideBoardName) && $hideBoardName))
-          <a href="{{ route('boards.show', ['board' => $notice->board->name]) }}">{{ $notice->board->name }}</a>
+          <a href="{{ route('boards.show', ['board' => $notice->board->name]) }}">{{ $notice->board->readable_name }}</a>
         @endif
       </h6>
       <div class="dropdown no-arrow">
@@ -35,10 +35,12 @@
             {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->expires) !!}
           </div>
         @elseif(isset($notice->expires))
-          <div class="col py-2 bg-warning text-dark">
-            <strong>Expires:</strong>
-            {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->expires) !!}
-          </div>
+          @can('update', $notice)
+            <div class="col py-2 bg-warning text-dark">
+              <strong>Expires:</strong>
+              {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->expires) !!}
+            </div>
+          @endcan
         @endif
       </div>
       <div class="row">

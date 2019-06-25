@@ -11,10 +11,16 @@
       text-align: center;
       padding: 0.75rem 1rem;
       width: $sidebar-collapsed-width;
+      background-color: transparent;
       span {
         font-size: 0.65rem;
         display: block;
       }
+    }
+    button.nav-link {
+      font-size: 0.65rem;
+      border: 0px;
+      &:focus { outline: 0; }
     }
     &.active {
       .nav-link {
@@ -189,6 +195,11 @@
           }
         }
       }
+      button.nav-link {
+        font-size: 0.85rem;
+        border: 0px;
+        &:focus { outline: 0; }
+      }
     }
     .sidebar-brand {
       .sidebar-brand-icon i {
@@ -245,6 +256,11 @@
           &[data-toggle="collapse"]::after {
             display: none;
           }
+        }
+        button.nav-link {
+          font-size: 0.65rem;
+          border: 0px;
+          &:focus { outline: 0; }
         }
       }
       .sidebar-brand {

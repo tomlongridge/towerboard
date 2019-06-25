@@ -19,7 +19,7 @@ class NoticeRequest extends FormRequest
     {
         $this->merge([
             'distribution' => intval($this->distribution),
-            'expires' => Carbon::createFromFormat('d/m/Y', $this->expires),
+            'expires' => isset($this->expires) ? Carbon::createFromFormat('d/m/Y', $this->expires) : null,
         ]);
     }
 

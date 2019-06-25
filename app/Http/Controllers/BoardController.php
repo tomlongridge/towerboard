@@ -7,6 +7,7 @@ use App\Board;
 use Auth;
 use Illuminate\Http\Request;
 use App\Enums\SubscriptionType;
+use App\Http\Requests\BoardRequest;
 
 class BoardController extends Controller
 {
@@ -52,10 +53,10 @@ class BoardController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(BoardRequest $request)
     {
         $board = Board::create(
-            $this->validateFields($request) +
+            $request->all() +
             ['created_by' => auth()->id()]
         );
         $board->subscribe(auth()->user(), SubscriptionType::ADMIN);
@@ -70,7 +71,8 @@ class BoardController extends Controller
      */
     public function show(Board $board)
     {
-        $notices = $board->getNotices(auth()->user()->can('update', $board));
+        $user = auth()->user();
+        $notices = $board->getNotices($user && $user->can('update', $board));
 
         return view('boards.show', compact('board', 'notices'));
     }
@@ -113,9 +115,9 @@ class BoardController extends Controller
      * @param  \App\Board  $board
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Board $board)
+    public function update(BoardRequest $request, Board $board)
     {
-        $board->update($this->validateFields($request));
+        $board->update($request->all());
 
         return redirect(route('boards.details', ['board' => $board->name]));
     }
@@ -133,13 +135,4 @@ class BoardController extends Controller
         return redirect(route('boards.index'));
     }
 
-    private function validateFields($request)
-    {
-        return $request->validate([
-            'name' => 'required',
-            'tower_id' => 'nullable',
-            'website_url' => 'nullable',
-            'can_post' => 'nullable'
-        ]);
-    }
 }

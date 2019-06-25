@@ -1,5 +1,5 @@
 @component('mail::message')
-# {{ $notice->board->name }} Notice Board
+# {{ $notice->board->readable_name }} Notice Board
 ## {{ $notice->title }}
 
 {{ $notice->body }}
@@ -9,7 +9,7 @@ View Details
 @endcomponent
 
 @component('mail::subcopy')
-You are receiving this message because you are subscribed to the {{ $notice->board->name }} notice board on {{ config('app.name') }}.
+You are receiving this message because you are subscribed to the {{ $notice->board->readable_name }} notice board on {{ config('app.name') }}.
 To unsubscribe, <a href="{{ route('boards.show', ['board' => $notice->board->name]) }}">click here</a>.
 @endcomponent
 

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => $board->name, 'activeBoard' => $board])
+@extends('layouts.app', ['title' => $board->readable_name, 'activeBoard' => $board])
 
 @section('content')
 

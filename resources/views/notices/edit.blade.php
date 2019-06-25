@@ -1,4 +1,4 @@
-@extends('boards.layout', ['title' => 'Edit Notice', 'activeBoard' => $board])
+@extends('boards.layout', ['title' => isset($notice) ? 'Edit Notice' : 'Create Notice', 'activeBoard' => $board])
 
 @section('subcontent')
 
@@ -11,10 +11,10 @@
       <div class="card-body px-5">
 
       @isset($notice)
-        <form method="POST" class="needs-validation" action="{{ route('notices.update', [ 'board' => $board->name, 'notice' => $notice->id ]) }}" novalidate>
+        <form method="POST" id="edit-form" action="{{ route('notices.update', [ 'board' => $board->name, 'notice' => $notice->id ]) }}" novalidate>
           @method('PATCH')
       @else
-        <form method="POST" class="needs-validation" action="{{ route('notices.store', [ 'board' => $board->name ]) }}" novalidate>
+        <form method="POST" id="edit-form" action="{{ route('notices.store', [ 'board' => $board->name ]) }}" novalidate>
       @endisset
         @csrf
 
@@ -32,7 +32,7 @@
           </div>
           <div class="form-group">
             <input type="text" class="form-control {{ $errors->has('expires') ? 'is-invalid' : '' }}"
-                   id="expires" name="expires" placeholder="expires"
+                   id="expires" name="expires" placeholder="Expiry date"
                    value="{{ old('expires', isset($notice) && $notice->expires ? $notice->expires->format('d/m/Y') : '') }}" />
           </div>
           <div class="form-group">
@@ -68,29 +68,21 @@
 
 @section('pagescripts')
 <script>
-    (function() {
-      'use strict';
-      window.addEventListener('load', function() {
-        var forms = document.getElementsByClassName('needs-validation');
-        var validation = Array.prototype.filter.call(forms, function(form) {
-          form.addEventListener('submit', function(event) {
-            if (form.checkValidity() === false) {
-              event.preventDefault();
-              event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-          }, false);
-        });
-      }, false);
-    })();
+  $('#edit-form').on('submit', function(event) {
+    if (this.checkValidity() === false) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.classList.add('was-validated');
+  });
 
-    $('#expires').datepicker({
-      format: "dd/mm/yyyy",
-      startDate: "{{ \Carbon\Carbon::now()->format('d/m/Y') }}",
-      weekStart: 1,
-      clearBtn: true,
-      todayHighlight: true
-    });
+  $('#expires').datepicker({
+    format: "dd/mm/yyyy",
+    startDate: "{{ \Carbon\Carbon::now()->format('d/m/Y') }}",
+    weekStart: 1,
+    clearBtn: true,
+    todayHighlight: true
+  });
 
 </script>
 @endsection

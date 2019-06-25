@@ -59,8 +59,8 @@
     </div>
   </div>
 
-  <h2>Affiliations</h2>
   @if(!$board->affiliatedTo->isEmpty())
+    <h2>Affiliations</h2>
     <div class="row">
       @foreach($board->affiliatedTo as $affiliate)
         <div class="col-lg-3">
@@ -81,24 +81,10 @@
         </div>
       @endforeach
     </div>
-  @else
-      <p>None</p>
   @endif
 
-  @can('update', $board)
-  <div>
-      <a class="btn btn-primary" href="{{ route('boards.edit', ['board' => $board->name]) }}">Edit</a>
-
-      <form method="POST" action="{{ route('boards.destroy', ['board' => $board->name]) }}" style="display: inline">
-          @method("DELETE")
-          @csrf
-          <input type="submit" class="btn btn-primary" value="Delete" />
-      </form>
-    </div>
-  @endcan
-
-  <h2>Affiliated Boards</h2>
   @if(!$board->affiliates->isEmpty())
+    <h2>Affiliated Boards</h2>
     <div class="row">
       @foreach($board->affiliates as $affiliate)
         <div class="col-lg-4">
@@ -119,9 +105,28 @@
         </div>
       @endforeach
     </div>
-  @else
-      <p>None</p>
   @endif
+
+  @can('update', $board)
+
+    <div class="row px-3 py-2 my-4">
+
+      <a href="{{ route('boards.edit', ['board' => $board->name]) }}" class="btn btn-primary btn-icon-split mr-2">
+        <span class="icon text-white-50"><i class="fas fa-edit"></i></span>
+        <span class="text">Edit</span>
+      </a>
+
+      <form method="POST" action="{{ route('boards.destroy', ['board' => $board->name]) }}" style="display: inline">
+          @method("DELETE")
+          @csrf
+          <button type="submit" class="btn btn-danger btn-icon-split" onclick="return confirm('Are you sure?')">
+            <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
+            <span class="text">Delete</span>
+          </button>
+      </form>
+    </div>
+
+  @endcan
 
 @endsection
 

@@ -18,6 +18,7 @@ class CreateBoard extends Migration
             $table->bigIncrements('id');
             $table->timestamps();
             $table->string('name')->unique();
+            $table->string('readable_name');
             $table->unsignedTinyInteger('type')->nullable();
             $table->unsignedBigInteger('created_by'); // FK->users
             $table->unsignedBigInteger('tower_id')->nullable(); // FK->towers

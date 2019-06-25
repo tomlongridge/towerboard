@@ -40,7 +40,7 @@ class NoticePolicy
             return false;
         }
 
-        return $subscription->type->value >= $board->can_post;
+        return $subscription->type->value >= $board->can_post->value;
     }
 
     /**

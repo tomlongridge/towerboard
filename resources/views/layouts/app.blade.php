@@ -40,13 +40,6 @@
             <i class="fas fa-fw fa-chalkboard"></i><span>Notice Board</span>
           </a>
         </li>
-        @can('create', [\App\Notice::class, $activeBoard])
-          <li class="nav-item {{ Route::is('notices.create') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('notices.create', ['board' => $activeBoard]) }}">
-              <i class="fas fa-fw fa-plus"></i><span>Add Notice</span>
-            </a>
-          </li>
-        @endcan
         <li class="nav-item {{ Route::is('boards.details') ? 'active' : '' }}">
           <a class="nav-link" href="{{ route('boards.details', ['board' => $activeBoard]) }}">
             <i class="fas fa-fw fa-info-circle"></i><span>About</span>
@@ -62,8 +55,41 @@
             <i class="fas fa-fw fa-envelope-open"></i><span>Contact</span>
           </a>
         </li>
+        @can('create', [\App\Notice::class, $activeBoard])
+          <hr class="sidebar-divider">
+          <li class="nav-item {{ Route::is('notices.create') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('notices.create', ['board' => $activeBoard]) }}">
+              <i class="fas fa-fw fa-plus"></i><span>Add Notice</span>
+            </a>
+          </li>
+        @endcan
+        @admin($activeBoard)
+        @else
+          <hr class="sidebar-divider">
+          @section('subscribe_nav')
+            <li class="nav-item">
+              <button type="submit" class="nav-link"><i class="fas fa-fw fa-plus"></i>Subscribe</button>
+            </li>
+          @endsection
+          @section('unsubscribe_nav')
+            <li class="nav-item">
+              <button type="submit" class="nav-link"><i class="fas fa-fw fa-plus"></i>Unsubscribe</button>
+            </li>
+          @endsection
+          @include('macros.subscribe', [ 'subscribe' => 'subscribe_nav', 'unsubscribe' => 'unsubscribe_nav', 'board' => $activeBoard, 'user' => null])
+        @endadmin
 
-      @endisset
+      @else
+
+        <li class="nav-item {{ Route::is('boards.create') ? 'active' : '' }}">
+          <a class="nav-link" href="{{ route('boards.create') }}">
+            <i class="fas fa-fw fa-plus"></i>
+            <i class="fas fa-fw fa-chalkboard"></i>
+            <span>Create Board</span>
+          </a>
+        </li>
+
+        @endisset
 
     </ul>
     <!-- End of Sidebar -->

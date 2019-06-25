@@ -5,6 +5,7 @@ namespace App;
 use App\Enums\SubscriptionType;
 use App\User;
 
+use BenSampo\Enum\Traits\CastsEnums;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,6 +20,11 @@ class Board extends Model
     {
         return 'name';
     }
+
+    use CastsEnums;
+    protected $enumCasts = [
+        'can_post' => SubscriptionType::class
+    ];
 
     protected static function boot()
     {
@@ -96,8 +102,10 @@ class Board extends Model
     {
         $allNotices = $this->notices();
         if (!$expired) {
-            $allNotices->where('expires', null)
-                       ->orWhere('expires', '<', Carbon::now());
+            $allNotices->where(function ($query) {
+                $query->whereNull('expires')
+                      ->orWhere('expires', '>', Carbon::now());
+            });
         }
         return $allNotices->get();
     }
@@ -152,4 +160,5 @@ class Board extends Model
                     ->using('App\BoardAffiliate')
                     ->withTimestamps();
     }
+
 }

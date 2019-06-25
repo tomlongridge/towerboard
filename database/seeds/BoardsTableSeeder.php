@@ -17,17 +17,17 @@ class BoardsTableSeeder extends Seeder{
     public function run()
     {
         $user = User::where('email', '=', 'tomlongridge@gmail.com')->first();
-        $user_mem = User::where('email', '=', 'tomlongridge+ann@gmail.com')->first();
-        $user_sub = User::where('email', '=', 'tomlongridge+sue@gmail.com')->first();
 
         $assocBoardId = DB::table('boards')->insertGetId([
-            'name' => 'Bath & Wells',
+            'name' => 'bath-wells',
+            'readable_name' => 'Bath & Wells',
             'created_by' => $user->id,
             'type' => BoardType::GUILD,
         ]);
 
         $branchBoardId = DB::table('boards')->insertGetId([
-            'name' => 'Bath Branch',
+            'name' => 'bath-branch',
+            'readable_name' => 'Bath Branch',
             'created_by' => $user->id,
             'type' => BoardType::BRANCH,
         ]);
@@ -38,13 +38,15 @@ class BoardsTableSeeder extends Seeder{
         ]);
 
         DB::table('boards')->insert([
-            'name' => 'Tom\' Quarter Pealers',
+            'name' => 'toms-quarter-pealers',
+            'readable_name' => 'Tom\'s Quarter Pealers',
             'created_by' => $user->id,
         ]);
 
         $tower = Tower::where('area', '=', 'Bathwick')->first();
         $towerBoardId = DB::table('boards')->insertGetId([
-            'name' => 'Bathwick',
+            'name' => 'bathwick',
+            'readable_name' => 'Bathwick',
             'website_url' => 'http://bathwick.brinkster.net',
             'address' => 'Darlington St, Bath',
             'postcode' => 'BA2 4EB',
@@ -58,27 +60,6 @@ class BoardsTableSeeder extends Seeder{
         DB::table('board_affiliates')->insert([
             'board_id' => $towerBoardId,
             'affiliate_id' => $branchBoardId
-        ]);
-
-        DB::table('board_subscriptions')->insert([
-            [
-                'board_id' => $towerBoardId,
-                'user_id' => $user_sub->id,
-                'type' => SubscriptionType::BASIC,
-                'created_at' => Carbon::now()->subtract(3, 'day')
-            ],
-            [
-                'board_id' => $towerBoardId,
-                'user_id' => $user_mem->id,
-                'type' => SubscriptionType::MEMBER,
-                'created_at' => Carbon::now()->subtract(3, 'day')
-            ],
-            [
-                'board_id' => $towerBoardId,
-                'user_id' => $user->id,
-                'type' => SubscriptionType::ADMIN,
-                'created_at' => Carbon::now()->subtract(3, 'day')
-            ]
         ]);
 
     }

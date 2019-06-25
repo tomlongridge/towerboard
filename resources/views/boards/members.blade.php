@@ -76,18 +76,21 @@
 
 
   <div class="card shadow mb-4">
-      <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Members</h6>
-      </div>
-      <div class="card-body">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Members</h6>
+    </div>
+    <div class="card-body">
+      @if(!$board->subscribers->isEmpty())
         <div class="table-responsive">
-          <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+          <table class="table table-bordered" id="member-table" width="100%" cellspacing="0">
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Membership</th>
                 @admin($board)
                   <th>Email</th>
+                @endadmin
+                <th>Membership</th>
+                @admin($board)
                   <th>Action</th>
                 @endadmin
               </tr>
@@ -96,13 +99,16 @@
               @foreach($board->subscribers as $user)
                 <tr>
                   <td>{{ $user->name }}</td>
+                  @admin($board)
+                    <td>{{ TowerBoardUtils::obscureEmail($user->email) }}</td>
+                  @endadmin
                   <td>
                     @admin($board)
                       @if($user->id != auth()->id())
                           <form method="POST" action="{{ route('subscriptions.update', ['board' => $board, 'user' => $user]) }}" style="display: inline">
                               @csrf
                               @method('PATCH')
-                              <select name="type" onchange="this.form.submit()">
+                              <select name="type" class="form-control" onchange="this.form.submit()">
                                   @foreach (\App\Enums\SubscriptionType::getInstances() as $type)
                                       <option
                                           value="{{ $type->value }}"
@@ -118,10 +124,12 @@
                     @endadmin
                   </td>
                   @admin($board)
-                    <td>{{ TowerBoardUtils::obscureEmail($user->email) }}</td>
                     <td>
                       @section('inline-unsubscribe')
-                          <input type="submit" class="btn btn-primary" value="Remove" />
+                          <button type="submit" class="btn btn-danger btn-icon-split">
+                              <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
+                              <span class="text">Remove</span>
+                            </button>
                       @endsection
                       @include('macros.subscribe', [ 'unsubscribe' => 'inline-unsubscribe', 'board' => $board, 'user' => $user ])
                     </td>
@@ -131,25 +139,47 @@
             </tbody>
           </table>
         </div>
-      </div>
+      @else
+        There are no members/subscribers.
+      @endif
     </div>
+  </div>
 
 
-    @can('update', $board)
-        <h2>Add Users</h2>
-        <form method="POST" action="{{ route('subscriptions.email', ['board' => $board->name]) }}">
-            @csrf
-            <textarea name="emails" class="form-control">{{ old('emails') }}</textarea>
-            <button type="submit" class="btn btn-primary">Add</button>
-        </form>
-    @endcan
+  @can('update', $board)
+    <h2>Add Users</h2>
+    <form method="POST" action="{{ route('subscriptions.email', ['board' => $board->name]) }}">
+      @csrf
+      <textarea name="emails" class="form-control">{{ old('emails') }}</textarea>
+      <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+  @endcan
 
-    @if(!$errors->isEmpty())
-        <ul class="alert alert-danger">
-        @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-        @endforeach
-        </ul>
-    @endif
+  @if(!$errors->isEmpty())
+      <ul class="alert alert-danger">
+      @foreach($errors->all() as $error)
+          <li>{{ $error }}</li>
+      @endforeach
+      </ul>
+  @endif
 
+@endsection
+
+@section('pagescripts')
+<script>
+  $(document).ready(function() {
+    $('#member-table').DataTable({
+        "paging": true,
+        "ordering": true,
+        "info": false,
+        "lengthMenu": [ [25, 50, -1], [25, 50, "All"] ],
+        "columns": [
+          null,
+          null,
+          { "orderable": false },
+          { "orderable": false },
+        ]
+    });
+  });
+</script>
 @endsection

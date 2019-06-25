@@ -11,7 +11,7 @@
                   <div class="row no-gutters align-items-center">
                       <div class="col mr-2">
                           <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            <a href="{{ route('boards.show', ['board' => $board->name]) }}">{{ $board->name }}</a>
+                            <a href="{{ route('boards.show', ['board' => $board->name]) }}">{{ $board->readable_name }}</a>
                           </div>
                       </div>
                       <div class="col-auto">
@@ -41,7 +41,7 @@
 
     @endforeach
 
-    @if ($board->notices->count() % 2 == 1)
+    @if ($notices->count() % 2 == 1)
         <div class="col-lg-6"></div>
       </div>
     @endif
