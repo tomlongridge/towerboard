@@ -160,5 +160,4 @@ class Board extends Model
                     ->using('App\BoardAffiliate')
                     ->withTimestamps();
     }
-
 }
