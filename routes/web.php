@@ -28,6 +28,9 @@ Route::resource('/boards', 'BoardController');
 Route::get('/boards/{board}/committee', 'BoardController@committee')->name('boards.committee');
 Route::get('/boards/{board}/details', 'BoardController@details')->name('boards.details');
 Route::get('/boards/{board}/contact', 'BoardController@contact')->name('boards.contact');
+Route::post('/boards/{board}/contact', 'BoardController@contactSend')
+       ->name('boards.contact.send')
+       ->middleware('verified');
 Route::get('/boards/{board}/members', 'BoardController@members')->name('boards.members');
 
 // Notices

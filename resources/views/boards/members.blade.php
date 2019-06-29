@@ -77,10 +77,16 @@
 
   <div class="card shadow mb-4">
     <div class="card-header py-3">
-      <h6 class="m-0 font-weight-bold text-primary">Members</h6>
+      <h6 class="m-0 font-weight-bold text-primary">
+        @admin($board)
+          Members &amp; Subscribers
+        @else
+          Members
+        @endadmin
+      </h6>
     </div>
     <div class="card-body">
-      @if(!$board->subscribers->isEmpty())
+      @if(!$users->isEmpty())
         <div class="table-responsive">
           <table class="table table-bordered" id="member-table" width="100%" cellspacing="0">
             <thead>
@@ -96,7 +102,7 @@
               </tr>
             </thead>
             <tbody>
-              @foreach($board->subscribers as $user)
+              @foreach($users as $user)
                 <tr>
                   <td>{{ $user->name }}</td>
                   @admin($board)
@@ -176,8 +182,10 @@
         "columns": [
           null,
           null,
+          @admin($board)
           { "orderable": false },
           { "orderable": false },
+          @endadmin
         ]
     });
   });

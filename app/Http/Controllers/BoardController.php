@@ -8,6 +8,11 @@ use Auth;
 use Illuminate\Http\Request;
 use App\Enums\SubscriptionType;
 use App\Http\Requests\BoardRequest;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\BoardContactMessage;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Input;
 
 class BoardController extends Controller
 {
@@ -92,9 +97,35 @@ class BoardController extends Controller
         return view('boards.contact', compact('board'));
     }
 
+    public function contactSend(Request $request, Board $board)
+    {
+        $validator = Validator::make(Input::all(), [
+            'message' => 'required',
+            'g-recaptcha-response' => 'required|captcha'
+        ]);
+
+        if ($validator->fails()) {
+            return redirect(route('boards.contact', ['board' => $board->name]))
+                       ->withErrors($validator)
+                       ->withInput();
+        }
+
+        Mail::to($board->administrators()->get())
+              ->send(new BoardContactMessage($board, auth()->user(), $request->message));
+
+        return redirect(route('boards.contact', ['board' => $board->name]))
+                   ->with('success', 'Message sent to the board administrators');
+    }
+
     public function members(Board $board)
     {
-        return view('boards.members', compact('board'));
+        $user = auth()->user();
+        if ($user && $user->can('update', $board)) {
+            $users = $board->subscribers;
+        } else {
+            $users = $board->members;
+        }
+        return view('boards.members', compact('board', 'users'));
     }
 
     /**

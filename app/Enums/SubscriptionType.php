@@ -8,8 +8,7 @@ final class SubscriptionType extends Enum
 {
     const BASIC     = 00;
     const MEMBER    = 10;
-    const COMMITTEE = 20;
-    const ADMIN     = 30;
+    const ADMIN     = 20;
 
     public static function getDescription($value): string
     {
@@ -17,8 +16,6 @@ final class SubscriptionType extends Enum
             return 'subscriber';
         } elseif ($value === self::MEMBER) {
             return 'member';
-        } elseif ($value === self::COMMITTEE) {
-            return 'committee member';
         } elseif ($value === self::ADMIN) {
             return 'administrator';
         }
