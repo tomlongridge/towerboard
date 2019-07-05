@@ -124,6 +124,8 @@
                                   @endforeach
                               </select>
                           </form>
+                      @else
+                        {{ ucwords($user->subscription->type->description) }}
                       @endif
                     @else
                       {{ ucwords($user->subscription->type->description) }}
@@ -151,23 +153,27 @@
     </div>
   </div>
 
-
   @can('update', $board)
-    <h2>Add Users</h2>
-    <form method="POST" action="{{ route('subscriptions.email', ['board' => $board->name]) }}">
-      @csrf
-      <textarea name="emails" class="form-control">{{ old('emails') }}</textarea>
-      <button type="submit" class="btn btn-primary">Add</button>
-    </form>
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Add Subscribers</h6>
+      </div>
+      <div class="card-body">
+        <form method="POST" id="bulk-add-form" action="{{ route('subscriptions.email', ['board' => $board->name]) }}" novalidate>
+          <p>Add a comma-separated list of people to add to the board. Maximum 10 at a time.</p>
+          @csrf
+          <div class="form-group">
+            <textarea name="emails" class="form-control {{ !$errors->isEmpty() ? 'is-invalid' : '' }}" required>{{ old('emails') }}</textarea>
+            <div class="invalid-feedback">@if(!$errors->isEmpty()) @foreach ($errors->all() as $error) {{ $error }} @endforeach @else Please enter at least one email address. Separate multiple addresses using a comma. @endif</div>
+          </div>
+          <button type="submit" class="btn btn-success btn-icon-split">
+            <span class="icon text-white-50"><i class="fas fa-plus"></i></span>
+            <span class="text">Add</span>
+          </button>
+        </form>
+      </div>
+    </div>
   @endcan
-
-  @if(!$errors->isEmpty())
-      <ul class="alert alert-danger">
-      @foreach($errors->all() as $error)
-          <li>{{ $error }}</li>
-      @endforeach
-      </ul>
-  @endif
 
 @endsection
 
@@ -188,6 +194,14 @@
           @endadmin
         ]
     });
+  });
+
+  $('#bulk-add-form').on('submit', function(event) {
+    if (this.checkValidity() === false) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.classList.add('was-validated');
   });
 </script>
 @endsection

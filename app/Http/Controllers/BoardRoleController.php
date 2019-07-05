@@ -97,7 +97,7 @@ class BoardRoleController extends Controller
             return response('Bad Request', 400);
         }
 
-        $this->authorize('update', [$board, BoardRole::class]);
+        $this->authorize('update', [BoardRole::class, $board]);
 
         $role->update([
             'contactable' => $request->contactable,

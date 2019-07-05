@@ -9,6 +9,7 @@ use BenSampo\Enum\Traits\CastsEnums;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Board extends Model
 {
@@ -152,6 +153,14 @@ class Board extends Model
     {
         return $this->subscribers()
             ->wherePivot('type', '>=', SubscriptionType::ADMIN);
+    }
+
+    public function contacts()
+    {
+        return DB::table('users')
+            ->join('board_roles', 'users.id', '=', 'board_roles.user_id')
+            ->where('board_roles.board_id', $this->id)
+            ->where('board_roles.contactable', 1);
     }
 
     public function affiliates()

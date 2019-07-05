@@ -73,12 +73,12 @@
           <hr class="sidebar-divider">
           @section('subscribe_nav')
             <li class="nav-item">
-              <button type="submit" class="nav-link"><i class="fas fa-fw fa-plus"></i>Subscribe</button>
+              <button type="submit" class="nav-link"><i class="fas fa-fw fa-star"></i>Subscribe</button>
             </li>
           @endsection
           @section('unsubscribe_nav')
             <li class="nav-item">
-              <button type="submit" class="nav-link"><i class="fas fa-fw fa-plus"></i>Unsubscribe</button>
+              <button type="submit" class="nav-link"><i class="far fa-fw fa-star"></i>Unsubscribe</button>
             </li>
           @endsection
           @include('macros.subscribe', [ 'subscribe' => 'subscribe_nav', 'unsubscribe' => 'unsubscribe_nav', 'board' => $activeBoard, 'user' => null])

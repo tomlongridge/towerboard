@@ -3,11 +3,11 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use App\Board;
 use App\User;
 use Carbon\Carbon;
+use Illuminate\Mail\Mailable;
 
 class BoardContactMessage extends Mailable
 {

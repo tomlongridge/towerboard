@@ -28,24 +28,22 @@
                   <td width="50%">{{ $role->name ?? $role->user->name }}</td>
                   <td>
                     @admin($board)
-                      @if($role->user_id != auth()->id())
-                          <form method="POST" action="{{ route('roles.update', ['board' => $board, 'role' => $role->id]) }}" style="display: inline">
-                              @csrf
-                              @method('PATCH')
-                              <input type="hidden" name="contactable" value="{{ $role->contactable }}" />
-                              <select name="type" class="form-control" onchange="this.form.submit()">
-                                  @foreach (\App\Enums\RoleType::getInstances() as $type)
-                                    @if ($type->value != \App\Enums\RoleType::NONE)
-                                      <option
-                                          value="{{ $type->value }}"
-                                          {{ $type->key == $role->type->key ? 'selected' : ''}}>
-                                          {{ ucwords($type->description) }}
-                                      </option>
-                                    @endif
-                                  @endforeach
-                              </select>
-                          </form>
-                      @endif
+                      <form method="POST" action="{{ route('roles.update', ['board' => $board, 'role' => $role->id]) }}" style="display: inline">
+                          @csrf
+                          @method('PATCH')
+                          <input type="hidden" name="contactable" value="{{ $role->contactable }}" />
+                          <select name="type" class="form-control" onchange="this.form.submit()">
+                              @foreach (\App\Enums\RoleType::getInstances() as $type)
+                                @if ($type->value != \App\Enums\RoleType::NONE)
+                                  <option
+                                      value="{{ $type->value }}"
+                                      {{ $type->key == $role->type->key ? 'selected' : ''}}>
+                                      {{ ucwords($type->description) }}
+                                  </option>
+                                @endif
+                              @endforeach
+                          </select>
+                      </form>
                     @else
                       {{ ucwords($role->type->description) }}
                     @endadmin

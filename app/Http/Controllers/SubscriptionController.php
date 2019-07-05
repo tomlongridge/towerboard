@@ -50,6 +50,8 @@ class SubscriptionController extends Controller
     {
         $this->authorize('addUser', [BoardSubscription::class, $board, Auth::user()]);
 
+        $numCreated = 0;
+        $numSubscribed = 0;
         foreach ($request->emails as $email) {
             $user = User::where('email', $email["email"])->first();
             if ($user == null) {
@@ -58,14 +60,27 @@ class SubscriptionController extends Controller
                     'forename' => $email["forename"],
                     'surname' => $email["surname"],
                 ]);
+                $numCreated++;
             }
 
             if (!$board->subscribers()->where('id', $user->id)->exists()) {
                 $board->subscribers()->attach($user->id);
+                $numSubscribed++;
             }
         }
 
-        return back();
+        if ($numSubscribed == 0) {
+            $request->session()->flash('warning', 'No new users added.');
+        } else {
+            $numSubscribed -= $numCreated;
+            $request->session()->flash(
+                'success',
+                "Subscribed $numCreated user(s)" .
+                ($numSubscribed > 0 ? "and subscribed $numSubscribed existing users." : ".")
+            );
+        }
+
+        return redirect(route('boards.members', ['board' => $board->name]));
     }
 
     /**

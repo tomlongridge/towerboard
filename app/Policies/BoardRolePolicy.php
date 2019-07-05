@@ -29,7 +29,7 @@ class BoardRolePolicy
      * @param  \App\Board $board
      * @return mixed
      */
-    public function update(User $user, Board $board, BoardRole $role)
+    public function update(User $user, Board $board)
     {
         return $board->isAdmin($user) || ($user != null && $user->id == auth()->id());
     }

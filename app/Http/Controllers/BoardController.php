@@ -136,10 +136,17 @@ class BoardController extends Controller
 
     public function contactSend(Request $request, Board $board)
     {
-        $validator = Validator::make($request->all(), [
-            'message' => 'required',
-            'g-recaptcha-response' => 'required|captcha'
-        ]);
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'message' => 'required',
+                'g-recaptcha-response' => 'required|captcha'
+            ],
+            [
+                'g-recaptcha-response.required' => "Please complete the anti-robot challenge.",
+                'g-recaptcha-response.captcha' => "The anti-robot challenge was not successful."
+            ]
+        );
 
         if ($validator->fails()) {
             return redirect(route('boards.contact', ['board' => $board->name]))
@@ -147,7 +154,7 @@ class BoardController extends Controller
                        ->withInput();
         }
 
-        Mail::to($board->administrators()->get())
+        Mail::to($board->contacts()->get())
               ->send(new BoardContactMessage($board, auth()->user(), $request->message));
 
         return redirect(route('boards.contact', ['board' => $board->name]))

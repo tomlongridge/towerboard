@@ -40,13 +40,16 @@ class EmailListRequest extends FormRequest
 
     private function extractEmailAddresses($input)
     {
-        return collect(explode(',', $input))->map(function ($line) {
-            // Attempt to match line in the format "FirstName Surname" <Email@Adress.com>
-            if (preg_match('/(?:"?([^"^\s]*)\s?([^"]*)?"?\s)?(?:<?(.+@[^>]+)>?)/', $line, $matches)) {
-                return ['email' => $matches[3], 'forename' => $matches[1], 'surname' => $matches[2]];
-            } else {
-                return ['email' => $line];
-            }
-        })->toArray();
+        return collect(explode(',', $input))
+            ->filter(function ($line) {
+                return $line != '' && !ctype_space($line);
+            })->map(function ($line) {
+                // Attempt to match line in the format "FirstName Surname" <Email@Adress.com>
+                if (preg_match('/(?:"?([^"^\s]*)\s?([^"]*)?"?\s)?(?:<?(.+@[^>]+)>?)/', $line, $matches)) {
+                    return ['email' => $matches[3], 'forename' => $matches[1], 'surname' => $matches[2]];
+                } else {
+                    return ['email' => $line];
+                }
+            })->toArray();
     }
 }
