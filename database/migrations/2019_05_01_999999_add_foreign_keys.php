@@ -32,6 +32,11 @@ class AddForeignKeys extends Migration
             $table->foreign('board_id')->references('id')->on('boards')->onDelete('cascade');
             $table->foreign('affiliate_id')->references('id')->on('boards')->onDelete('cascade');
         });
+
+        Schema::table('board_roles', function (Blueprint $table) {
+            $table->foreign('board_id')->references('id')->on('boards')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+        });
     }
 
     /**
@@ -41,6 +46,11 @@ class AddForeignKeys extends Migration
      */
     public function down()
     {
+        Schema::table('board_roles', function (Blueprint $table) {
+            $table->dropForeign(['board_id']);
+            $table->dropForeign(['user_id']);
+        });
+
         Schema::table('board_affiliates', function (Blueprint $table) {
             $table->dropForeign(['board_id']);
             $table->dropForeign(['affiliate_id']);

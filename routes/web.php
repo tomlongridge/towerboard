@@ -44,3 +44,6 @@ Route::delete('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionContro
 Route::patch('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@update')
     ->name('subscriptions.update');
 Route::post('/boards/{board}/subscriptions/emails', 'SubscriptionController@add')->name('subscriptions.email');
+
+// Roles
+Route::resource('/boards/{board}/roles', 'BoardRoleController');

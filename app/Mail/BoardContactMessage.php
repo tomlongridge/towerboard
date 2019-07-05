@@ -3,13 +3,10 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
+use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use App\Board;
 use App\User;
-use Illuminate\Foundation\Console\Presets\React;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class BoardContactMessage extends Mailable

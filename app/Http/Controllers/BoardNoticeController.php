@@ -8,7 +8,6 @@ use App\Notice;
 
 use BenSampo\Enum\Traits\CastsEnums;
 
-use Illuminate\Http\Request;
 use App\Http\Requests\NoticeRequest;
 
 class BoardNoticeController extends Controller

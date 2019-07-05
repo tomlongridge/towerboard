@@ -88,6 +88,19 @@ class Board extends Model
         return $this->isSubscribed($user, SubscriptionType::MEMBER);
     }
 
+    public function isCommittee(User $user = null)
+    {
+        if ($user == null) {
+            $user = auth()->user();
+        }
+
+        if ($user == null) {
+            return null;
+        }
+
+        return $this->committee()->where('user_id', $user->id)->first() != null;
+    }
+
     public function isAdmin(User $user = null)
     {
         return $this->isSubscribed($user, SubscriptionType::ADMIN);
@@ -122,6 +135,11 @@ class Board extends Model
                     ->withPivot('type')
                     ->as('subscription')
                     ->withTimestamps();
+    }
+
+    public function committee()
+    {
+        return $this->hasMany(BoardRole::class);
     }
 
     public function members()

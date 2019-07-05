@@ -4,7 +4,7 @@ namespace App\Enums;
 
 use BenSampo\Enum\Enum;
 
-final class CommitteeRole extends Enum
+final class RoleType extends Enum
 {
     const NONE           = 00;
     const CHAIR          = 10;

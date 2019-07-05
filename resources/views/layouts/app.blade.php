@@ -45,6 +45,11 @@
             <i class="fas fa-fw fa-info-circle"></i><span>About</span>
           </a>
         </li>
+        <li class="nav-item {{ Route::is('boards.committee') ? 'active' : '' }}">
+          <a class="nav-link" href="{{ route('boards.committee', ['board' => $activeBoard]) }}">
+            <i class="fas fa-fw fa-user-friends"></i><span>Committee</span>
+          </a>
+        </li>
         <li class="nav-item {{ Route::is('boards.members') ? 'active' : '' }}">
           <a class="nav-link" href="{{ route('boards.members', ['board' => $activeBoard]) }}">
             <i class="fas fa-fw fa-user-friends"></i><span>Members</span>

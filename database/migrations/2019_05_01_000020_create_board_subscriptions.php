@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 use App\Enums\SubscriptionType;
-use App\Enums\CommitteeRole;
 
 class CreateBoardSubscriptions extends Migration
 {
@@ -19,7 +18,6 @@ class CreateBoardSubscriptions extends Migration
             $table->unsignedBigInteger('board_id');
             $table->unsignedBigInteger('user_id');
             $table->unsignedTinyInteger('type')->default(SubscriptionType::BASIC);
-            $table->unsignedTinyInteger('role')->default(CommitteeRole::NONE);
             $table->timestamps();
         });
     }
