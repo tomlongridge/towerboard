@@ -35,7 +35,7 @@
                   </span>
                 </div>
                 <div class="col-auto">
-                  @include('macros.boardicon', ['board' => $board])
+                  @include('macros.board-icon', ['board' => $board])
                 </div>
               </div>
             </div>

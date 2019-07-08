@@ -175,11 +175,11 @@ class BoardController extends Controller
     public function addMembers(Board $board)
     {
         $this->authorize('update', $board);
-        return view('boards.addmembers', compact('board'));
+        return view('boards.add-members', compact('board'));
     }
 
-    public function unsubscribe(Board $board)
+    public function subscribe(Board $board)
     {
-        return view('boards.unsubscribe', compact('board'));
+        return view('boards.subscribe', compact('board'));
     }
 }

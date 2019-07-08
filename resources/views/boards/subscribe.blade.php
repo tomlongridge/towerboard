@@ -14,13 +14,17 @@
         </div>
         <div class="card-body px-5">
           <p>
-            If you would like to stop receiving emails from this board and already have a Towerboard
-            account, the easiest way to unsubscribe is to login and visit the My Account page.
+            The easiest way to manage the emails that your receive is to
+            <a href="{{ route('register') }}">create a Towerboard account</a>,
+            login and choose the boards that you wish to subscribe to or visit the My Account page to
+            manage your exising subscriptions.
+            If you have been receiving emails from Towerboard but have not set a password (or cannot
+            remember it), then you can reset it <a href="{{ route('password.request') }}">here</a>.
           </p>
           <p>
-            Otherwise, use the form opposite to unsubscribe your email address. We'll send you a link
-            to your email address (to confirm it's really you). If you wish to unsubscribe from
-            all Towerboard boards, then please check the box and we'll take you off our list entirely.
+            Otherwise, use the forms below to manually subscribe or unsubscribe your email address.
+            We'll send you a link to your email address (to confirm it's really you) that will add or
+            remove your email address from our list for this board.
           </p>
         </div>
       </div>
@@ -31,7 +35,7 @@
 
       <div class="card shadow mb-4">
         <div class="card-header py-3">
-          <h6 class="m-0 font-weight-bold text-primary">Send Unsubscribe Link</h6>
+          <h6 class="m-0 font-weight-bold text-primary">Send Link</h6>
         </div>
         <div class="card-body px-5">
 
@@ -48,9 +52,13 @@
 
             <div class="form-group row mb-0">
               <div class="col-md-6 offset-md-4">
-                <button type="submit" class="btn btn-success btn-icon-split">
-                  <span class="icon text-white-50"><i class="fas fa-envelope"></i></span>
-                  <span class="text">Send</span>
+                <button type="submit" name="subscribe" value="0" class="btn btn-secondary btn-icon-split">
+                  <span class="icon text-white-50"><i class="far fa-star"></i></span>
+                  <span class="text">Unsubscribe</span>
+                </button>
+                <button type="submit" name="subscribe" value="1" class="btn btn-success btn-icon-split">
+                  <span class="icon text-white-50"><i class="fas fa-star"></i></span>
+                  <span class="text">Subscribe</span>
                 </button>
               </div>
             </div>

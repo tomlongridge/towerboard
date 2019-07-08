@@ -39,7 +39,7 @@ class UserSubscribed extends Mailable
     {
         return
             $this->markdown(
-                'mail.boards.usersubscribed',
+                'mail.boards.user-subscribed',
                 [
                     'board' => $this->board,
                     'user' => $this->user,

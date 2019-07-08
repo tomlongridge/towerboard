@@ -12,18 +12,18 @@ use Illuminate\Http\Request;
 use App\Enums\SubscriptionType;
 use App\Notifications\UserSubscribed;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\UnsubscribeLink;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\URL;
+use App\Mail\SubscriptionLink;
 
 class SubscriptionController extends Controller
 {
     /**
-     * Store a newly created resource in storage.
+     * Subscribes an authenticated user.
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Board                $board the board to subscribe to
+     * @param  \App\User                 $user the user to subscribe
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request, Board $board, User $user)
@@ -40,6 +40,14 @@ class SubscriptionController extends Controller
         return back();
     }
 
+    /**
+     * Changes the subscription type of an authenticated user.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Board                $board the board to subscribe to
+     * @param  \App\User                 $user the user to amend
+     * @return \Illuminate\Http\Response
+     */
     public function update(Request $request, Board $board, User $user)
     {
         if (!isset($user->id)) {
@@ -55,7 +63,14 @@ class SubscriptionController extends Controller
         return back();
     }
 
-    public function add(Board $board, EmailListRequest $request)
+    /**
+     * Subscribes a list of email addresses to a board.
+     *
+     * @param  \App\Board                            $board the board to subscribe to
+     * @param  \App\Http\Requests\EmailListRequest   $request the email addresses to add
+     * @return \Illuminate\Http\Response
+     */
+    public function bulkAdd(Board $board, EmailListRequest $request)
     {
         $this->authorize('addUser', [BoardSubscription::class, $board, Auth::user()]);
 
@@ -94,9 +109,41 @@ class SubscriptionController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Subscribes a user from a signed URL.
      *
-     * @param  \App\BoardSubscription  $boardSubscription
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Board                $board the board to subscribe to
+     * @param  String                    $email the email address to use
+     * @return \Illuminate\Http\Response
+     */
+    public function add(Request $request, Board $board, String $email)
+    {
+        if (!$request->hasValidSignature()) {
+            abort(401);
+        }
+
+        $user = User::where('email', $email)->first();
+        if ($user == null) {
+            $user = User::create([
+                'email' => $email["email"],
+            ]);
+        }
+
+        if (!$board->subscribers()->where('id', $user->id)->exists()) {
+            $board->subscribers()->attach($user->id);
+        }
+
+        $request->session()->flash('success', 'You have been subscribed to this board.');
+        return redirect(route('boards.show', ['board' => $board->name]));
+    }
+
+    /**
+     * Unsubscribes a user from the board - either from a signed URL in a GET request
+     * or an authenticated user in a DELETE request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Board                $board the board to subscribe to
+     * @param  \App\User                 $user the user to unsubscribe
      * @return \Illuminate\Http\Response
      */
     public function destroy(Request $request, Board $board, User $user)
@@ -117,6 +164,14 @@ class SubscriptionController extends Controller
         return redirect(route('boards.show', ['board' => $board->name]));
     }
 
+    /**
+     * Triggers an email to the requested email address with either a subscribe or an
+     * unsubscribe link to the appropriate route.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Board                $board the board to subscribe to
+     * @return \Illuminate\Http\Response
+     */
     public function sendLink(Board $board, Request $request)
     {
         $validator = Validator::make(
@@ -127,23 +182,30 @@ class SubscriptionController extends Controller
         );
 
         if ($validator->fails()) {
-            return redirect(route('boards.unsubscribe', ['board' => $board->name]))
+            return redirect(route('boards.subscribe', ['board' => $board->name]))
                       ->withErrors($validator)
                       ->withInput();
         }
 
-        $user = User::where('email', $request->email)->first();
-        if (($user != null) && $user->subscriptions()->where('board_id', $board->id)->exists()) {
-            $unsubscribeLink =
-                URL::temporarySignedRoute(
-                    'subscriptions.destroy',
-                    now()->addDays(1),
-                    ['user' => $user->id, 'board' => $board->name]
-                );
-            Mail::to($request->email)->send(new UnsubscribeLink($board, $unsubscribeLink));
+        $subscribe = boolval($request->subscribe);
+        $params = null;
+        if ($subscribe) {
+            $params = ['email' => $request->email, 'board' => $board->name];
+            $route = 'subscriptions.add';
+        } else {
+            $user = User::where('email', $request->email)->first();
+            if (($user != null) && $user->subscriptions()->where('board_id', $board->id)->exists()) {
+                $params = ['user' => $user->id, 'board' => $board->name];
+            }
+            $route = 'subscriptions.destroy';
         }
 
-        $request->session()->flash('success', 'Unsubscribe link sent to your email address.');
-        return redirect(route('boards.unsubscribe', ['board' => $board->name]));
+        if ($params != null) {
+            $link = URL::temporarySignedRoute($route, now()->addDays(1), $params);
+            Mail::to($request->email)->send(new SubscriptionLink($board, $link, $subscribe));
+        }
+
+        $request->session()->flash('success', 'A link has been sent to your email address.');
+        return redirect(route('boards.subscribe', ['board' => $board->name]));
     }
 }

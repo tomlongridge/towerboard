@@ -8,7 +8,7 @@
       <h6 class="m-0 font-weight-bold text-primary">Add Subscribers</h6>
       </div>
       <div class="card-body">
-        <form method="POST" id="bulk-add-form" action="{{ route('subscriptions.email', ['board' => $board->name]) }}" novalidate>
+        <form method="POST" id="bulk-add-form" action="{{ route('subscriptions.bulk', ['board' => $board->name]) }}" novalidate>
           <p>Add a comma-separated list of people to add to the board. Maximum 10 at a time.</p>
           @csrf
           <div class="form-group">

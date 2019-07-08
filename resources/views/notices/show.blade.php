@@ -11,7 +11,7 @@
           </div>
         </div>
         <div class="col-auto">
-          @include('macros.boardicon', ['board' => $notice->board])
+          @include('macros.board-icon', ['board' => $notice->board])
         </div>
       </div>
     </div>

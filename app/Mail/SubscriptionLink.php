@@ -7,22 +7,24 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UnsubscribeLink extends Mailable
+class SubscriptionLink extends Mailable
 {
     use Queueable, SerializesModels;
 
     private $board;
-    private $unsubscribeLink;
+    private $link;
+    private $subscribe;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($board, $unsubscribeLink)
+    public function __construct($board, $link, $subscribe)
     {
         $this->board = $board;
-        $this->unsubscribeLink = $unsubscribeLink;
+        $this->link = $link;
+        $this->subscribe = $subscribe;
     }
 
     /**
@@ -34,12 +36,14 @@ class UnsubscribeLink extends Mailable
     {
         return
           $this->markdown(
-              'mail.boards.unsubscribelink',
+              'mail.boards.subscription-link',
               [
                   'board' => $this->board,
-                  'unsubscribeLink' => $this->unsubscribeLink,
+                  'link' => $this->link,
+                  'subscribe' => $this->subscribe,
               ]
           )
-          ->subject("Unsubscribe from {$this->board->readable_name} on Towerboard");
+          ->subject(($this->subscribe ? "Subscribe to" : "Unsubscribe from") .
+                    " {$this->board->readable_name} on Towerboard");
     }
 }

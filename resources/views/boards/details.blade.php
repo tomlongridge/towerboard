@@ -73,7 +73,7 @@
                   </div>
                 </div>
                 <div class="col-auto">
-                  @include('macros.boardicon', ['board' => $affiliate])
+                  @include('macros.board-icon', ['board' => $affiliate])
                 </div>
               </div>
             </div>
@@ -97,7 +97,7 @@
                   </div>
                 </div>
                 <div class="col-auto">
-                  @include('macros.boardicon', ['board' => $affiliate])
+                  @include('macros.board-icon', ['board' => $affiliate])
                 </div>
               </div>
             </div>

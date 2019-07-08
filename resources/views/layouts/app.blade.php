@@ -92,8 +92,8 @@
             @include('macros.subscribe', [ 'subscribe' => 'subscribe_nav', 'unsubscribe' => 'unsubscribe_nav', 'board' => $activeBoard, 'user' => null])
           @else
             <li class="nav-item">
-              <a href="{{ route('boards.unsubscribe', ['board' => $activeBoard]) }}" class="nav-link">
-                <i class="far fa-fw fa-star"></i><span>Unsubscribe</span>
+              <a href="{{ route('boards.subscribe', ['board' => $activeBoard]) }}" class="nav-link">
+                <i class="far fa-fw fa-star"></i><span>Subscribe/Unsubscribe</span>
               </a>
             </li>
           @endauth
