@@ -10,6 +10,13 @@ use App\Http\Requests\EmailListRequest;
 use Auth;
 use Illuminate\Http\Request;
 use App\Enums\SubscriptionType;
+use App\Notifications\UserSubscribed;
+use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\UnsubscribeLink;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\URL;
 
 class SubscriptionController extends Controller
 {
@@ -19,7 +26,7 @@ class SubscriptionController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Board $board, User $user)
+    public function store(Request $request, Board $board, User $user)
     {
         if (!isset($user->id)) {
             $user = Auth::user();
@@ -28,6 +35,8 @@ class SubscriptionController extends Controller
         $this->authorize('create', [BoardSubscription::class, $board, $user]);
 
         $board->subscribers()->attach($user->id);
+        $request->session()->flash('success', 'You have been subscribed to this board.');
+
         return back();
     }
 
@@ -65,6 +74,7 @@ class SubscriptionController extends Controller
 
             if (!$board->subscribers()->where('id', $user->id)->exists()) {
                 $board->subscribers()->attach($user->id);
+                $user->notify(new UserSubscribed($board, $user, auth()->user()));
                 $numSubscribed++;
             }
         }
@@ -89,15 +99,51 @@ class SubscriptionController extends Controller
      * @param  \App\BoardSubscription  $boardSubscription
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Board $board, User $user)
+    public function destroy(Request $request, Board $board, User $user)
     {
-        if (!isset($user->id)) {
-            $user = Auth::user();
+        if ($request->method() == "GET") {
+            if (!$request->hasValidSignature()) {
+                abort(401);
+            }
+        } else {
+            if (!isset($user->id)) {
+                $user = Auth::user();
+            }
+            $this->authorize('delete', [BoardSubscription::class, $board, $user]);
+        }
+        $board->subscribers()->detach($user->id);
+
+        $request->session()->flash('success', 'You have been unsubscribed from this board.');
+        return redirect(route('boards.show', ['board' => $board->name]));
+    }
+
+    public function sendLink(Board $board, Request $request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'email' => 'required|email',
+            ]
+        );
+
+        if ($validator->fails()) {
+            return redirect(route('boards.unsubscribe', ['board' => $board->name]))
+                      ->withErrors($validator)
+                      ->withInput();
         }
 
-        $this->authorize('delete', [BoardSubscription::class, $board, $user]);
+        $user = User::where('email', $request->email)->first();
+        if (($user != null) && $user->subscriptions()->where('board_id', $board->id)->exists()) {
+            $unsubscribeLink =
+                URL::temporarySignedRoute(
+                    'subscriptions.destroy',
+                    now()->addDays(1),
+                    ['user' => $user->id, 'board' => $board->name]
+                );
+            Mail::to($request->email)->send(new UnsubscribeLink($board, $unsubscribeLink));
+        }
 
-        $board->subscribers()->detach($user->id);
-        return back();
+        $request->session()->flash('success', 'Unsubscribe link sent to your email address.');
+        return redirect(route('boards.unsubscribe', ['board' => $board->name]));
     }
 }

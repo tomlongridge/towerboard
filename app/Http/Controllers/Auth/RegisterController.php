@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Http\Request;
 
 class RegisterController extends Controller
 {
@@ -28,7 +29,7 @@ class RegisterController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/';
+    protected $redirectTo = '/account';
 
     /**
      * Create a new controller instance.
@@ -48,12 +49,24 @@ class RegisterController extends Controller
      */
     protected function validator(array $data)
     {
-        return Validator::make($data, [
-            'forename' => ['required', 'string', 'max:255'],
-            'surname' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        return Validator::make(
+            $data,
+            [
+                'forename' => ['required', 'string', 'max:255'],
+                'middle_initials' => ['nullable', 'alpha', 'max:10'],
+                'surname' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+                'password' => ['required', 'string', 'min:8', 'confirmed',
+                               'regex:/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{6,}$/'],
+            ],
+            [
+                'email.email' => 'The email address given does not look valid.',
+                'email.unique' => 'This email address has already been registered. Use the Reset Password page to ' .
+                                  'set your password and access your account.',
+                'password.regex' => 'Your password must be longer than 8 characters and have at least one number ' .
+                                    'and both uppercase and lowercase letters.',
+            ]
+        );
     }
 
     /**

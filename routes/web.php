@@ -32,6 +32,8 @@ Route::post('/boards/{board}/contact', 'BoardController@contactSend')
        ->name('boards.contact.send')
        ->middleware('verified');
 Route::get('/boards/{board}/members', 'BoardController@members')->name('boards.members');
+Route::get('/boards/{board}/members/add', 'BoardController@addMembers')->name('boards.members.add');
+Route::get('/boards/{board}/unsubscribe', 'BoardController@unsubscribe')->name('boards.unsubscribe');
 
 // Notices
 Route::resource('/boards/{board}/notices', 'BoardNoticeController');
@@ -39,11 +41,12 @@ Route::resource('/boards/{board}/notices', 'BoardNoticeController');
 
 // Subscription
 Route::post('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@store')->name('subscriptions.store');
-Route::delete('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@destroy')
+Route::match(['get', 'delete'], '/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@destroy')
     ->name('subscriptions.destroy');
 Route::patch('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@update')
     ->name('subscriptions.update');
 Route::post('/boards/{board}/subscriptions/emails', 'SubscriptionController@add')->name('subscriptions.email');
+Route::post('/boards/{board}/subscriptions/link', 'SubscriptionController@sendLink')->name('subscriptions.link');
 
 // Roles
 Route::resource('/boards/{board}/roles', 'BoardRoleController');

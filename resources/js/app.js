@@ -17,6 +17,10 @@ window.mapboxgl = require('mapbox-gl');
 window.List = require('list.js');
 window.Vue = require('vue');
 
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+
 /**
  * The following block of code may be used to automatically register your
  * Vue components. It will recursively scan this directory for the Vue

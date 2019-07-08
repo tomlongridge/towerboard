@@ -42,6 +42,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany('App\Board', 'board_subscriptions')
                     ->using('App\BoardSubscription')
+                    ->withPivot('type')
                     ->withTimestamps();
     }
 

@@ -24,7 +24,6 @@ class Notice extends Model
     use SoftDeletes;
     protected $guarded = ['id'];
 
-
     protected static function boot()
     {
         parent::boot();

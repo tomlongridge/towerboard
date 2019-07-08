@@ -27,7 +27,8 @@ class UserController extends Controller
     public function edit()
     {
         $user = Auth::user();
-        return view('users.edit', compact('user'));
+        $subscriptions = $user->subscriptions()->get();
+        return view('users.edit', compact('user', 'subscriptions'));
     }
 
     /**
@@ -41,6 +42,8 @@ class UserController extends Controller
     {
         $user = Auth::user();
         $user->update($this->validateFields($request));
+
+        $request->session()->flash('success', 'Account updated.');
         return redirect(route('accounts.edit'));
     }
 
@@ -58,10 +61,15 @@ class UserController extends Controller
     private function validateFields($request)
     {
         return $request->validate(
-            [ 'forename' => 'required',
-              'surname' => 'required',
-              'middle_initials' => '',
-              'email' => 'required|unique:users,email,' . auth()->id() ]
+            [
+                'forename' => ['required', 'string', 'max:255'],
+                'middle_initials' => ['nullable', 'alpha', 'max:10'],
+                'surname' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . auth()->id()],
+            ],
+            [
+                'email.email' => 'The email address given does not look valid.',
+            ]
         );
     }
 }

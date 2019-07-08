@@ -68,33 +68,56 @@
             </a>
           </li>
         @endcan
+        @can('update', $activeBoard)
+          <li class="nav-item {{ Route::is('boards.members.add') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('boards.members.add', ['board' => $activeBoard]) }}">
+              <i class="fas fa-fw fa-plus"></i><span>Add Members</span>
+            </a>
+          </li>
+        @endcan
         @admin($activeBoard)
         @else
           <hr class="sidebar-divider">
-          @section('subscribe_nav')
+          @auth
+            @section('subscribe_nav')
+              <li class="nav-item">
+                <button type="submit" class="nav-link"><i class="fas fa-fw fa-star"></i>Subscribe</button>
+              </li>
+            @endsection
+            @section('unsubscribe_nav')
+              <li class="nav-item">
+                <button type="submit" class="nav-link"><i class="far fa-fw fa-star"></i>Unsubscribe</button>
+              </li>
+            @endsection
+            @include('macros.subscribe', [ 'subscribe' => 'subscribe_nav', 'unsubscribe' => 'unsubscribe_nav', 'board' => $activeBoard, 'user' => null])
+          @else
             <li class="nav-item">
-              <button type="submit" class="nav-link"><i class="fas fa-fw fa-star"></i>Subscribe</button>
+              <a href="{{ route('boards.unsubscribe', ['board' => $activeBoard]) }}" class="nav-link">
+                <i class="far fa-fw fa-star"></i><span>Unsubscribe</span>
+              </a>
             </li>
-          @endsection
-          @section('unsubscribe_nav')
-            <li class="nav-item">
-              <button type="submit" class="nav-link"><i class="far fa-fw fa-star"></i>Unsubscribe</button>
-            </li>
-          @endsection
-          @include('macros.subscribe', [ 'subscribe' => 'subscribe_nav', 'unsubscribe' => 'unsubscribe_nav', 'board' => $activeBoard, 'user' => null])
+          @endauth
         @endadmin
 
       @else
 
-        <li class="nav-item {{ Route::is('boards.create') ? 'active' : '' }}">
-          <a class="nav-link" href="{{ route('boards.create') }}">
-            <i class="fas fa-fw fa-plus"></i>
-            <i class="fas fa-fw fa-chalkboard"></i>
-            <span>Create Board</span>
+        <li class="nav-item {{ Route::is('boards.search') ? 'active' : '' }}">
+          <a class="nav-link" href="{{ route('boards.search') }}">
+            <i class="fas fa-fw fa-search"></i>
+            <span>Find Boards</span>
           </a>
         </li>
+        @auth
+          <li class="nav-item {{ Route::is('boards.create') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('boards.create') }}">
+              <i class="fas fa-fw fa-plus"></i>
+              <i class="fas fa-fw fa-chalkboard"></i>
+              <span>Create Board</span>
+            </a>
+          </li>
+        @endauth
 
-        @endisset
+      @endisset
 
     </ul>
     <!-- End of Sidebar -->
@@ -175,8 +198,7 @@
                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                     My Account
                   </a>
-                  <div class="dropdown-divider"></div>
-                  <a class="dropdown-item" href="{{ route('logout') }}" data-toggle="modal" data-target="#logoutModal"
+                  <a class="dropdown-item" href="{{ route('logout') }}"
                     onClick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                     Logout
@@ -193,33 +215,13 @@
         </nav>
         <!-- End of Topbar -->
 
-        @if ($message = Session::get('success'))
-          <div class="alert alert-success alert-block">
-            <button type="button" class="close" data-dismiss="alert">×</button>
-            <strong>{{ $message }}</strong>
-          </div>
-        @endif
-        @if ($message = Session::get('error'))
-          <div class="alert alert-danger alert-block">
-            <button type="button" class="close" data-dismiss="alert">×</button>
-            <strong>{{ $message }}</strong>
-          </div>
-        @endif
-        @if ($message = Session::get('warning'))
-          <div class="alert alert-warning alert-block">
-            <button type="button" class="close" data-dismiss="alert">×</button>
-            <strong>{{ $message }}</strong>
-          </div>
-        @endif
-        @if ($message = Session::get('info'))
-          <div class="alert alert-info alert-block">
-            <button type="button" class="close" data-dismiss="alert">×</button>
-            <strong>{{ $message }}</strong>
-          </div>
-        @endif
+        @include('macros.alert', ['key' => 'success', 'class' => 'success'])
+        @include('macros.alert', ['key' => 'error', 'class' => 'danger'])
+        @include('macros.alert', ['key' => 'warning', 'class' => 'warning'])
+        @include('macros.alert', ['key' => 'info', 'class' => 'info'])
 
         <!-- Begin Page Content -->
-        <div id="app" class="container-fluid">
+        <div id="app" class="{{ $appContainerClasses ?? 'container-fluid' }}">
 
           @yield('content')
 
@@ -228,16 +230,6 @@
 
       </div>
       <!-- End of Main Content -->
-
-      <!-- Footer -->
-      <footer class="sticky-footer bg-white">
-        <div class="container my-auto">
-          <div class="copyright text-center my-auto">
-            <span>Copyright &copy; Your Website 2019</span>
-          </div>
-        </div>
-      </footer>
-      <!-- End of Footer -->
 
     </div>
     <!-- End of Content Wrapper -->
@@ -249,25 +241,6 @@
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
-
-  <!-- Logout Modal-->
-  <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
-          <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">×</span>
-          </button>
-        </div>
-        <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-          <a class="btn btn-primary" href="login.html">Logout</a>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <script src="/js/manifest.js"></script>
   <script src="/js/vendor.js"></script>
