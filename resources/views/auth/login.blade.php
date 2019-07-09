@@ -40,6 +40,7 @@
 
           <form method="POST" action="{{ route('login') }}" id="login-form" novalidate>
             @csrf
+            <input type="hidden" name="returnUrl" value="{{ Request::query('returnUrl') }}" />
 
             <div class="form-group row">
               <label for="email" class="col-md-4 col-form-label text-md-right">Email Address</label>

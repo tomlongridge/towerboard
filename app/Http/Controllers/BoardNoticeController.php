@@ -9,6 +9,11 @@ use App\Notice;
 use BenSampo\Enum\Traits\CastsEnums;
 
 use App\Http\Requests\NoticeRequest;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NoticeReply;
+use App\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class BoardNoticeController extends Controller
 {
@@ -114,5 +119,28 @@ class BoardNoticeController extends Controller
     public function mail(Board $board, Notice $notice)
     {
         return new NoticeCreated($notice);
+    }
+
+    public function reply(Board $board, Notice $notice, Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'message' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect(route('notices.show', ['board' => $board->name, 'notice' => $notice->id]))
+                        ->withErrors($validator)
+                        ->withInput();
+        }
+
+        if ($notice->replyTo()->exists()) {
+            $user = auth()->user();
+            Mail::to($notice->replyTo)->send(new NoticeReply($notice, $user, $request->message));
+            $request->session()->flash('success', "Your reply has been sent to {$user->name}.");
+        } else {
+            $request->session()->flash('error', "No replies were requested for this notice.");
+        }
+
+        return redirect(route('notices.show', ['board' => $board->name, 'notice' => $notice->id]));
     }
 }

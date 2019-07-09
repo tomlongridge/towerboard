@@ -2,7 +2,7 @@
 
 @section('content')
 
-  <div class="card border-left-primary shadow h-100 py-2 my-4">
+  <div class="card border-bottom-primary shadow h-100 py-2 my-4">
     <div class="card-body">
       <div class="row no-gutters align-items-center">
         <div class="col mr-2">

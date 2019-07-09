@@ -33,7 +33,8 @@ class NoticeRequest extends FormRequest
         return [
             'title' => 'required',
             'body' => 'required',
-            'distribution' => ['required', new EnumValue(SubscriptionType::class)]
+            'distribution' => ['required', new EnumValue(SubscriptionType::class)],
+            'reply_to' => 'sometimes',
         ];
     }
 }

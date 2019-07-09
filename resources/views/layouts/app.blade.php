@@ -91,7 +91,7 @@
             @endsection
             @include('macros.subscribe', [ 'subscribe' => 'subscribe_nav', 'unsubscribe' => 'unsubscribe_nav', 'board' => $activeBoard, 'user' => null])
           @else
-            <li class="nav-item">
+            <li class="nav-item {{ Route::is('boards.subscribe') ? 'active' : '' }}">
               <a href="{{ route('boards.subscribe', ['board' => $activeBoard]) }}" class="nav-link">
                 <i class="far fa-fw fa-star"></i><span>Subscribe/Unsubscribe</span>
               </a>
@@ -185,7 +185,7 @@
 
               <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
                 @guest
-                  <a class="dropdown-item" href="{{ route('login') }}">
+                  <a class="dropdown-item" href="{{ route('login') }}?returnUrl={{ request()->url() }}">
                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                     Login
                   </a>
@@ -203,7 +203,7 @@
                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                     Logout
                   </a>
-                  <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                  <form id="logout-form" action="{{ route('logout') }}?returnUrl={{ request()->url() }}" method="POST" style="display: none;">
                     @csrf
                   </form>
                 @endguest
@@ -230,6 +230,16 @@
 
       </div>
       <!-- End of Main Content -->
+
+      <!-- Footer -->
+      <footer class="sticky-footer bg-white">
+        <div class="container my-auto">
+          <div class="copyright text-center my-auto">
+            <span>Copyright &copy; Tom Longridge, 2019</span>
+          </div>
+        </div>
+      </footer>
+      <!-- End of Footer -->
 
     </div>
     <!-- End of Content Wrapper -->

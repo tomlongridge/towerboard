@@ -31,8 +31,9 @@
             <div class="invalid-feedback">Some text for the body of the notice is required.</div>
           </div>
           <div class="form-group">
+            <label for="distribution">Expiry Date</label>
             <input type="text" class="form-control {{ $errors->has('expires') ? 'is-invalid' : '' }}"
-                   id="expires" name="expires" placeholder="Expiry date"
+                   id="expires" name="expires" placeholder="None"
                    value="{{ old('expires', isset($notice) && $notice->expires ? $notice->expires->format('d/m/Y') : '') }}" />
           </div>
           <div class="form-group">
@@ -43,6 +44,15 @@
                   {{ old('distribution', isset($notice) ? $notice->distribution : \App\Enums\SubscriptionType::getInstance(\App\Enums\SubscriptionType::BASIC)) == $type ? 'selected' : '' }} >
                   {{ ucwords(str_plural($type->description)) }}
                 </option>
+              @endforeach
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="reply_to">Reply To</label>
+            <select id="reply-select" name="reply_to" required>
+              <option value="">No replies</option>
+              @foreach ($board->members()->get() as $member)
+                <option value="{{ $member->id }}" {{ old('reply_to', isset($notice) ? $notice->reply_to : -1) == $member->id ? 'selected' : '' }}>{{ $member->name }}</option>
               @endforeach
             </select>
           </div>
@@ -83,6 +93,12 @@
     clearBtn: true,
     todayHighlight: true
   });
+
+$('#reply-select').selectize({
+  create: false,
+  selectOnTab: true,
+  dropdownParent: "body",
+});
 
 </script>
 @endsection

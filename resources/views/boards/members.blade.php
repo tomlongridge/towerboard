@@ -37,41 +37,43 @@
         </div>
       </div>
     </div>
-    <div class="col-xl-6 col-md-12 mb-4">
-      <div class="card border-left-primary shadow h-100 py-2">
-        <div class="card-body">
-          <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
-              <div class="h5 mb-0 text-gray-800">
-                  @subscriber($board)
-                    You are {{ \App\Helpers\TowerBoardUtils::strToNoun($board->getSubscription()->type->description) }} of this board
-                  @else
-                    You are not subscribed to this board
-                  @endsubscriber
+    @auth
+      <div class="col-xl-6 col-md-12 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div class="h5 mb-0 text-gray-800">
+                    @subscriber($board)
+                      You are {{ \App\Helpers\TowerBoardUtils::strToNoun($board->getSubscription()->type->description) }} of this board
+                    @else
+                      You are not subscribed to this board
+                    @endsubscriber
+                </div>
               </div>
-            </div>
-            <div class="col-auto">
-                @admin($board)
-                @else
-                  @section('subscribe')
-                    <button type="submit" class="btn btn-primary btn-icon-split">
-                      <span class="icon text-white-50"><i class="fas fa-star"></i></span>
-                      <span class="text">Subscribe</span>
-                    </button>
-                  @endsection
-                  @section('unsubscribe')
-                    <button type="submit" class="btn btn-primary btn-icon-split">
-                      <span class="icon text-white-50"><i class="far fa-star"></i></span>
-                      <span class="text">Unsubscribe</span>
-                    </button>
-                  @endsection
-                  @include('macros.subscribe', [ 'board' => $board, 'user' => null])
-                @endadmin
+              <div class="col-auto">
+                  @admin($board)
+                  @else
+                    @section('subscribe')
+                      <button type="submit" class="btn btn-primary btn-icon-split">
+                        <span class="icon text-white-50"><i class="fas fa-star"></i></span>
+                        <span class="text">Subscribe</span>
+                      </button>
+                    @endsection
+                    @section('unsubscribe')
+                      <button type="submit" class="btn btn-primary btn-icon-split">
+                        <span class="icon text-white-50"><i class="far fa-star"></i></span>
+                        <span class="text">Unsubscribe</span>
+                      </button>
+                    @endsection
+                    @include('macros.subscribe', [ 'board' => $board, 'user' => null])
+                  @endadmin
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    @endauth
   </div>
 
 

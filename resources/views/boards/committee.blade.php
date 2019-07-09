@@ -106,7 +106,7 @@
                 <tr>
                   <td width="50%">
                     <div class="form-group">
-                        <select id="name-select" class="tb-dropdown" required>
+                        <select id="name-select" required>
                           <option></option>
                           @foreach ($board->members()->get() as $member)
                             <option value="{{ $member->id }}">{{ $member->name }}</option>

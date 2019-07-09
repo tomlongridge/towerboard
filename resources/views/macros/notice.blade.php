@@ -1,9 +1,12 @@
 <div class="col-lg-6">
   <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-      <h6 class="m-0 font-weight-bold text-primary">
+      <h6 class="m-0">
         @if(!(isset($hideBoardName) && $hideBoardName))
           <a href="{{ route('boards.show', ['board' => $notice->board->name]) }}">{{ $notice->board->readable_name }}</a>
+        @else
+          <strong>{{ $notice->createdBy->name }}</strong>,
+            {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->created_at) !!}
         @endif
       </h6>
       <div class="dropdown no-arrow">
@@ -13,6 +16,9 @@
         <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
           <div class="dropdown-header">Actions:</div>
           <a class="dropdown-item" href="{{ route('notices.show', ['board' => $notice->board->name, 'notice' => $notice->id]) }}">View</a>
+          @if(isset($notice->replyTo) &&  !$notice->expired)
+            <a class="dropdown-item" href="{{ route('notices.show', ['board' => $notice->board->name, 'notice' => $notice->id]) }}">Reply</a>
+          @endif
           @can('update', $notice)
             <div class="dropdown-divider"></div>
             <a class="dropdown-item" href="{{ route('notices.edit', [ 'board' => $notice->board->name, 'notice' => $notice->id ]) }}">Edit</a>
@@ -26,32 +32,27 @@
       </div>
     </div>
     <div class="card-body">
+
+        @if($notice->expired)
+        <div class="row bg-danger text-light py-2 mb-2 justify-content-center">
+            <strong>Expired:</strong>&nbsp;
+            {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->expires) !!}
+        </div>
+      @elseif(isset($notice->expires))
+        @can('update', $notice)
+          <div class="row bg-warning text-dark py-2 mb-2 justify-content-center">
+              <strong>Expires:</strong>&nbsp;
+              {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->expires) !!}
+          </div>
+        @endcan
+      @endif
       <h5>{{ $notice->title }}</h5>
       {!! str_limit(clean($notice->body), 500, '&hellip;</p>') !!}
-      <div class="row">
-        @if($notice->expires && $notice->expires->isPast())
-          <div class="col bg-danger text-light py-2">
-            <strong>Expired:</strong>
-            {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->expires) !!}
-          </div>
-        @elseif(isset($notice->expires))
-          @can('update', $notice)
-            <div class="col py-2 bg-warning text-dark">
-              <strong>Expires:</strong>
-              {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->expires) !!}
-            </div>
-          @endcan
-        @endif
-      </div>
-      <div class="row">
-        <div class="col">
-          Posted by
-          <strong>{{ $notice->createdBy->name }}</strong>,
-            {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->created_at) !!}
-        </div>
-        <div class="col text-right">
-          &raquo; <a href="{{ route('notices.show', ['board' => $notice->board->name, 'notice' => $notice->id]) }}">Read More&hellip;</a>
-        </div>
+      <div class="row justify-content-center">
+        <a href="{{ route('notices.show', ['board' => $notice->board->name, 'notice' => $notice->id]) }}" class="btn btn-primary btn-icon-split">
+          <span class="text">Read More</span>
+          <span class="icon text-white-50"><i class="fas fa-arrow-right"></i></span>
+        </a>
       </div>
     </div>
   </div>

@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class Board extends Model
 {
@@ -107,13 +108,16 @@ class Board extends Model
         return $this->isSubscribed($user, SubscriptionType::ADMIN);
     }
 
-    public function getNotices($expired = false)
+    public function getActiveNotices()
     {
         $allNotices = $this->notices();
-        if (!$expired) {
+        if (!$this->isAdmin()) {
             $allNotices->where(function ($query) {
                 $query->whereNull('expires')
                       ->orWhere('expires', '>', Carbon::now());
+                if (Auth::check()) {
+                      $query->orWhere('created_by', auth()->id());
+                }
             });
         }
         return $allNotices->get();

@@ -75,7 +75,7 @@ class BoardController extends Controller
     public function show(Board $board)
     {
         $user = auth()->user();
-        $notices = $board->getNotices($user && $user->can('update', $board));
+        $notices = $board->getActiveNotices();
 
         return view('boards.show', compact('board', 'notices'));
     }

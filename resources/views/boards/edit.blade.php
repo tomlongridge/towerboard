@@ -61,7 +61,7 @@
         @endif
         >
             <label for="name">Tower</label>
-            <select id="tower" name="tower_id" class="tb-dropdown">
+            <select id="tower" name="tower_id">
                 @isset($board)
                     <option value="{{ $board->tower_id }}" selected="selected">
                         @include('macros.tower', ['tower' => $board->tower])
@@ -181,10 +181,10 @@
     },
     render: {
       option: function(item, escape) {
-        return '<div><span class="tb-dropdown-option">' + item.name + '</span></div>';
+        return '<div class="tb-dropdown-option">' + item.name + '</div>';
       },
       item: function(item, escape) {
-        return '<div><span class="tb-dropdown-item">' + item.name + '</span></div>';
+        return '<div class="tb-dropdown-item">' + item.name + '</div>';
       }
     },
   });

@@ -52,7 +52,8 @@ class NoticePolicy
      */
     public function update(User $user, Notice $notice)
     {
-        return $this->create($user, $notice->board);
+        return ($notice->createdBy->id == $user->id) || $notice->board->isAdmin($user);
+        // return $this->create($user, $notice->board);
     }
 
     /**

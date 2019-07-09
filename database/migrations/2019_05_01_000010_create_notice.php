@@ -22,6 +22,7 @@ class CreateNotice extends Migration
             $table->date('expires')->nullable();
             $table->unsignedBigInteger('board_id'); // FK->boards
             $table->unsignedBigInteger('created_by');
+            $table->unsignedBigInteger('reply_to')->nullable();
             $table->unsignedTinyInteger('distribution')->default(SubscriptionType::BASIC);
 
             $table->softDeletes();

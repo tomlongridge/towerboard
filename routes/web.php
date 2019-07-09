@@ -33,10 +33,11 @@ Route::post('/boards/{board}/contact', 'BoardController@contactSend')
        ->middleware('verified');
 Route::get('/boards/{board}/members', 'BoardController@members')->name('boards.members');
 Route::get('/boards/{board}/members/add', 'BoardController@addMembers')->name('boards.members.add');
-Route::get('/boards/{board}/subscribe', 'BoardController@subscribe')->name('boards.subscribe');
+Route::get('/boards/{board}/subscribe', 'BoardController@subscribe')->name('boards.subscribe')->middleware('guest');
 
 // Notices
 Route::resource('/boards/{board}/notices', 'BoardNoticeController');
+Route::post('/boards/{board}/notices/{notice}/reply', 'BoardNoticeController@reply')->name('notices.reply');
 // Route::get('/boards/{board}/notices/{notice}/mail', 'BoardNoticeController@mail');
 
 // Subscription
