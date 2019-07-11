@@ -38,7 +38,7 @@ Route::get('/boards/{board}/subscribe', 'BoardController@subscribe')->name('boar
 // Notices
 Route::resource('/boards/{board}/notices', 'BoardNoticeController');
 Route::post('/boards/{board}/notices/{notice}/reply', 'BoardNoticeController@reply')->name('notices.reply');
-// Route::get('/boards/{board}/notices/{notice}/mail', 'BoardNoticeController@mail');
+Route::resource('/boards/{board}/notices/{notice}/messages', 'NoticeMessageController');
 
 // Subscription
 Route::post('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@store')->name('subscriptions.store');

@@ -52,6 +52,11 @@ class Notice extends Model
         return $this->belongsTo(User::class, 'reply_to');
     }
 
+    public function messages()
+    {
+        return $this->hasMany(NoticeMessage::class);
+    }
+
     public function getExpiresAttribute($expires)
     {
         return $expires != null ? new Carbon($expires) : null;

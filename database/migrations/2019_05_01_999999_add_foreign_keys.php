@@ -18,11 +18,6 @@ class AddForeignKeys extends Migration
             $table->foreign('tower_id')->references('id')->on('towers');
         });
 
-        Schema::table('notices', function (Blueprint $table) {
-            $table->foreign('board_id')->references('id')->on('boards');
-            $table->foreign('created_by')->references('id')->on('users');
-        });
-
         Schema::table('board_subscriptions', function (Blueprint $table) {
             $table->foreign('board_id')->references('id')->on('boards')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
@@ -37,6 +32,16 @@ class AddForeignKeys extends Migration
             $table->foreign('board_id')->references('id')->on('boards')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
+
+        Schema::table('notices', function (Blueprint $table) {
+            $table->foreign('board_id')->references('id')->on('boards');
+            $table->foreign('created_by')->references('id')->on('users');
+        });
+
+        Schema::table('notice_messages', function (Blueprint $table) {
+            $table->foreign('notice_id')->references('id')->on('notices')->onDelete('cascade');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
+        });
     }
 
     /**
@@ -46,28 +51,45 @@ class AddForeignKeys extends Migration
      */
     public function down()
     {
-        Schema::table('board_roles', function (Blueprint $table) {
-            $table->dropForeign(['board_id']);
-            $table->dropForeign(['user_id']);
-        });
+        if (Schema::hasTable('notice_messages')) {
+            Schema::table('notice_messages', function (Blueprint $table) {
+                $table->dropForeign(['notice_id']);
+                $table->dropForeign(['created_by']);
+            });
+        }
 
-        Schema::table('board_affiliates', function (Blueprint $table) {
-            $table->dropForeign(['board_id']);
-            $table->dropForeign(['affiliate_id']);
-        });
+        if (Schema::hasTable('notices')) {
+            Schema::table('notices', function (Blueprint $table) {
+                $table->dropForeign(['board_id']);
+            });
+        }
 
-        Schema::table('board_subscriptions', function (Blueprint $table) {
-            $table->dropForeign(['board_id']);
-            $table->dropForeign(['user_id']);
-        });
+        if (Schema::hasTable('board_roles')) {
+            Schema::table('board_roles', function (Blueprint $table) {
+                $table->dropForeign(['board_id']);
+                $table->dropForeign(['user_id']);
+            });
+        }
 
-        Schema::table('notices', function (Blueprint $table) {
-            $table->dropForeign(['board_id']);
-        });
+        if (Schema::hasTable('board_affiliates')) {
+            Schema::table('board_affiliates', function (Blueprint $table) {
+                $table->dropForeign(['board_id']);
+                $table->dropForeign(['affiliate_id']);
+            });
+        }
 
-        Schema::table('boards', function (Blueprint $table) {
-            $table->dropForeign(['tower_id']);
-            $table->dropForeign(['created_by']);
-        });
+        if (Schema::hasTable('board_subscriptions')) {
+            Schema::table('board_subscriptions', function (Blueprint $table) {
+                $table->dropForeign(['board_id']);
+                $table->dropForeign(['user_id']);
+            });
+        }
+
+        if (Schema::hasTable('boards')) {
+            Schema::table('boards', function (Blueprint $table) {
+                $table->dropForeign(['tower_id']);
+                $table->dropForeign(['created_by']);
+            });
+        }
     }
 }

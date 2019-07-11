@@ -3,11 +3,11 @@
 namespace App\Policies;
 
 use App\User;
-use App\Notice;
-use App\Board;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use App\Board;
+use App\Notice;
 
-class NoticePolicy
+class NoticeMessagePolicy
 {
     use HandlesAuthorization;
 
@@ -18,7 +18,7 @@ class NoticePolicy
      * @param  \App\Notice  $notice
      * @return mixed
      */
-    public function view(?User $user, Notice $notice)
+    public function view(?User $user, Board $board, Notice $notice)
     {
         return true;
     }
@@ -29,18 +29,12 @@ class NoticePolicy
      * @param  \App\User  $user
      * @return mixed
      */
-    public function create(User $user, Board $board)
+    public function create(User $user, Board $board, Notice $notice)
     {
         if ($user == null) {
             return false;
         }
-
-        $subscription = $board->getSubscription($user);
-        if ($subscription == null) {
-            return false;
-        }
-
-        return $subscription->type->value >= $board->can_post->value;
+        return ($notice->createdBy->id == $user->id) || $notice->board->isAdmin($user);
     }
 
     /**
@@ -50,12 +44,9 @@ class NoticePolicy
      * @param  \App\Notice  $notice
      * @return mixed
      */
-    public function update(User $user, Notice $notice)
+    public function update(User $user, Board $board, Notice $notice)
     {
-        if ($user == null) {
-            return false;
-        }
-        return ($notice->createdBy->id == $user->id) || $notice->board->isAdmin($user);
+        return $this->update($user, $board, $notice);
     }
 
     /**
@@ -65,9 +56,9 @@ class NoticePolicy
      * @param  \App\Notice  $notice
      * @return mixed
      */
-    public function delete(User $user, Notice $notice)
+    public function delete(User $user, Board $board, Notice $notice)
     {
-        return $this->update($user, $notice->board);
+        return $this->update($user, $board, $notice);
     }
 
     /**
@@ -77,9 +68,9 @@ class NoticePolicy
      * @param  \App\Notice  $notice
      * @return mixed
      */
-    public function restore(User $user, Notice $notice)
+    public function restore(User $user, Board $board, Notice $notice)
     {
-        return $this->update($user, $notice->board);
+        return $this->update($user, $board, $notice);
     }
 
     /**
@@ -89,7 +80,7 @@ class NoticePolicy
      * @param  \App\Notice  $notice
      * @return mixed
      */
-    public function forceDelete(User $user, Notice $notice)
+    public function forceDelete(User $user, Board $board, Notice $notice)
     {
         return false;
     }

@@ -116,11 +116,6 @@ class BoardNoticeController extends Controller
         return redirect(route("boards.show", ['board' => $board->name]));
     }
 
-    public function mail(Board $board, Notice $notice)
-    {
-        return new NoticeCreated($notice);
-    }
-
     public function reply(Board $board, Notice $notice, Request $request)
     {
         $validator = Validator::make($request->all(), [
