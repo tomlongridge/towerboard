@@ -26,15 +26,15 @@
           </div>
           <div class="form-group">
             <textarea class="form-control {{ $errors->has('body') ? 'is-invalid' : '' }}"
-                      id="body" name="body" rows="10" placeholder="Notice Text"
+                      id="body-field" name="body" rows="10" placeholder="Notice Text"
                       required>{{ old('body', isset($notice) ? $notice->body : '') }}</textarea>
             <div class="invalid-feedback">Some text for the body of the notice is required.</div>
           </div>
           <div class="form-group">
             <label for="distribution">Expiry Date</label>
-            <input type="text" class="form-control {{ $errors->has('expires') ? 'is-invalid' : '' }}"
-                   id="expires" name="expires" placeholder="None"
-                   value="{{ old('expires', isset($notice) && $notice->expires ? $notice->expires->format('d/m/Y') : '') }}" />
+            <input type="text" class="form-control {{ $errors->has('deleted_at') ? 'is-invalid' : '' }}"
+                   id="deleted_at" name="deleted_at" placeholder="None"
+                   value="{{ old('deleted_at', isset($notice) && $notice->deleted_at ? $notice->deleted_at->format('d/m/Y') : '') }}" />
           </div>
           <div class="form-group">
             <label for="distribution">Send To</label>
@@ -86,18 +86,38 @@
     this.classList.add('was-validated');
   });
 
-  $('#expires').datepicker({
+  $('#deleted_at').datepicker({
     format: "dd/mm/yyyy",
     startDate: "{{ \Carbon\Carbon::now()->format('d/m/Y') }}",
     weekStart: 1,
     clearBtn: true,
-    todayHighlight: true
+    todayHighlight: true,
+    zIndexOffset: 1000
   });
 
 $('#reply-select').selectize({
   create: false,
   selectOnTab: true,
   dropdownParent: "body",
+});
+
+$(document).ready(function() {
+  $('#body-field').summernote({
+    toolbar: [
+      ['style', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+      ['fontsize', ['fontsize']],
+      ['color', ['style', 'color']],
+      ['para', ['ul', 'ol', 'paragraph']],
+      ['misc', ['fullscreen', 'codeview', 'undo', 'redo', 'link']]
+    ],
+    shortcuts: false,
+    airMode: false,
+    popover: {
+      image: [],
+      link: [],
+      air: []
+    }
+  });
 });
 
 </script>

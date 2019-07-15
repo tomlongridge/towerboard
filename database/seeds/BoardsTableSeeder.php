@@ -50,6 +50,13 @@ class BoardsTableSeeder extends Seeder{
             'website_url' => 'http://bathwick.brinkster.net',
             'address' => 'Darlington St, Bath',
             'postcode' => 'BA2 4EB',
+            'twitter_handle' => 'tomlongridge',
+            'facebook_url' => 'groups/bathwick.ringers',
+            'info_parking' => 'Parking is available in the car park outside on practice evenings. ' .
+                              'Otherwise you\'ll need to use on street parking.',
+            'info_toilets' => 'Not usually accessible',
+            'info_practices' => 'Wednesday, 7:30pm',
+            'info_services' => 'Sunday, 9:15am, by arrangement',
             'latitude' => -2.351199,
             'longitude' => 51.384340,
             'created_by' => $user->id,

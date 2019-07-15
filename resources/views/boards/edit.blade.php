@@ -72,8 +72,33 @@
         <div class="form-group">
           <label for="website_url">Website</label>
           <input type="text" class="form-control {{ $errors->has('website_url') ? 'is-invalid' : '' }}" id="website_url" name="website_url"
-                 placeholder="http://www.yoursite.com" value="{{ old('website_url', isset($board) ? $board->website_url : '') }}" />
-          <div class="invalid-feedback">@error('website_url') {{ $message }} @enderror</div>
+                 placeholder="http://www.yoursite.com" pattern="https?://.+"
+                 value="{{ old('website_url', isset($board) ? $board->website_url : '') }}" />
+          <div class="invalid-feedback">@error('website_url') {{ $message }} @else The website address is not valid - it should start http:// or https:// @enderror</div>
+        </div>
+        <div class="form-group">
+          <label for="website_url">Facebook</label>
+          <div class="input-group mb-2 mr-sm-2">
+            <div class="input-group-prepend">
+              <div class="input-group-text">https://www.facebook.com/</div>
+            </div>
+            <input type="text" class="form-control {{ $errors->has('facebook_url') ? 'is-invalid' : '' }}" id="facebook_url" name="facebook_url"
+                  placeholder="/groups/my-tower" pattern="[A-Za-z0-9\.\-\/]+"
+                  value="{{ old('facebook_url', isset($board) ? $board->facebook_url : '') }}" />
+            <div class="invalid-feedback">@error('facebook_url') {{ $message }} @else The Facebook address is not valid - just include the part after facebook.com/ @enderror</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="twitter_handle">Twitter</label>
+          <div class="input-group mb-2 mr-sm-2">
+            <div class="input-group-prepend">
+              <div class="input-group-text">@</div>
+            </div>
+            <input type="text" class="form-control {{ $errors->has('twitter_handle') ? 'is-invalid' : '' }}" id="twitter_handle" name="twitter_handle"
+                   placeholder="@@mytower" value="{{ old('twitter_handle', isset($board) ? $board->twitter_handle : '') }}"
+                   pattern="[A-Za-z_]{1,15}" />
+            <div class="invalid-feedback">@error('twitter_handle') {{ $message }} @else The Twitter handle should be only characters or underscores @enderror</div>
+          </div>
         </div>
         <div class="form-group">
           <label for="address">Postal Address</label>

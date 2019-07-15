@@ -6,7 +6,6 @@ use BenSampo\Enum\Traits\CastsEnums;
 use Carbon\Carbon;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Notification;
 
 use App\Notifications\NoticeCreated;
@@ -21,7 +20,6 @@ class Notice extends Model
         'distribution' => SubscriptionType::class
     ];
 
-    use SoftDeletes;
     protected $guarded = ['id'];
 
     protected static function boot()
@@ -57,13 +55,27 @@ class Notice extends Model
         return $this->hasMany(NoticeMessage::class);
     }
 
-    public function getExpiresAttribute($expires)
+    public function scopeActive($query)
     {
-        return $expires != null ? new Carbon($expires) : null;
+        return $query
+            ->whereNull('deleted_at')
+            ->orWhere('deleted_at', '>', Carbon::now());
     }
 
-    public function getExpiredAttribute()
+    public function scopeArchived($query)
     {
-        return $this->expires != null && $this->expires->isPast();
+        return $query
+            ->whereNotNull('deleted_at')
+            ->where('deleted_at', '<', Carbon::now());
+    }
+
+    public function getDeletedAtAttribute($deleted_at)
+    {
+        return $deleted_at != null ? new Carbon($deleted_at) : null;
+    }
+
+    public function getArchivedAttribute()
+    {
+        return $this->deleted_at != null && $this->deleted_at->isPast();
     }
 }

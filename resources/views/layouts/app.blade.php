@@ -35,10 +35,27 @@
 
       @isset($activeBoard)
 
-        <li class="nav-item {{ Route::is('boards.show') || Route::is('notices.show') ? 'active' : '' }}">
+        <li class="nav-item {{ Route::is('boards.show') || Route::is('boards.archive') || Route::is('notices.*') ? 'active' : '' }}">
           <a class="nav-link" href="{{ route('boards.show', ['board' => $activeBoard]) }}">
             <i class="fas fa-fw fa-chalkboard"></i><span>Notice Board</span>
           </a>
+          @if(Route::is('boards.show') || Route::is('boards.archive') || Route::is('notices.*'))
+            <div class="collapse show">
+              <div class="bg-white py-2 collapse-inner rounded">
+                <a class="collapse-item" href="{{ route('boards.show', ['board' => $activeBoard]) }}">
+                  <i class="fas fa-fw fa-thumbtack"></i>&nbsp;Current Notices
+                </a>
+                <a class="collapse-item" href="{{ route('boards.archive', ['board' => $activeBoard]) }}">
+                  <i class="far fa-fw fa-folder"></i>&nbsp;Archives
+                </a>
+                @can('create', [\App\Notice::class, $activeBoard])
+                  <a class="collapse-item" href="{{ route('notices.create', ['board' => $activeBoard]) }}">
+                    <i class="fas fa-fw fa-plus"></i>&nbsp;<span>Add Notice</span>
+                  </a>
+                @endcan
+              </div>
+            </div>
+          @endif
         </li>
         <li class="nav-item {{ Route::is('boards.details') ? 'active' : '' }}">
           <a class="nav-link" href="{{ route('boards.details', ['board' => $activeBoard]) }}">
@@ -47,34 +64,33 @@
         </li>
         <li class="nav-item {{ Route::is('boards.committee') ? 'active' : '' }}">
           <a class="nav-link" href="{{ route('boards.committee', ['board' => $activeBoard]) }}">
-            <i class="fas fa-fw fa-user-friends"></i><span>Committee</span>
+            <i class="fas fa-fw fa-user-shield"></i><span>Committee</span>
           </a>
         </li>
         <li class="nav-item {{ Route::is('boards.members') ? 'active' : '' }}">
           <a class="nav-link" href="{{ route('boards.members', ['board' => $activeBoard]) }}">
             <i class="fas fa-fw fa-user-friends"></i><span>Members</span>
           </a>
+          @if(Route::is('boards.members*'))
+            <div class="collapse show">
+              <div class="bg-white py-2 collapse-inner rounded">
+                <a class="collapse-item" href="{{ route('boards.members', ['board' => $activeBoard]) }}">
+                  <i class="fas fa-fw fa-list"></i>&nbsp;List
+                </a>
+                @can('update', $activeBoard)
+                  <a class="collapse-item" href="{{ route('boards.members.add', ['board' => $activeBoard]) }}">
+                    <i class="fas fa-fw fa-plus"></i>&nbsp;<span>Invite</span>
+                  </a>
+                @endcan
+              </div>
+            </div>
+          @endif
         </li>
         <li class="nav-item {{ Route::is('boards.contact') ? 'active' : '' }}">
           <a class="nav-link" href="{{ route('boards.contact', ['board' => $activeBoard]) }}">
             <i class="fas fa-fw fa-envelope-open"></i><span>Contact</span>
           </a>
         </li>
-        @can('create', [\App\Notice::class, $activeBoard])
-          <hr class="sidebar-divider">
-          <li class="nav-item {{ Route::is('notices.create') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('notices.create', ['board' => $activeBoard]) }}">
-              <i class="fas fa-fw fa-plus"></i><span>Add Notice</span>
-            </a>
-          </li>
-        @endcan
-        @can('update', $activeBoard)
-          <li class="nav-item {{ Route::is('boards.members.add') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('boards.members.add', ['board' => $activeBoard]) }}">
-              <i class="fas fa-fw fa-plus"></i><span>Add Members</span>
-            </a>
-          </li>
-        @endcan
         @admin($activeBoard)
         @else
           <hr class="sidebar-divider">

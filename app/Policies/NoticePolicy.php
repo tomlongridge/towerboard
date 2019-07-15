@@ -67,7 +67,7 @@ class NoticePolicy
      */
     public function delete(User $user, Notice $notice)
     {
-        return $this->update($user, $notice->board);
+        return $this->update($user, $notice);
     }
 
     /**
@@ -79,7 +79,7 @@ class NoticePolicy
      */
     public function restore(User $user, Notice $notice)
     {
-        return $this->update($user, $notice->board);
+        return $this->update($user, $notice);
     }
 
     /**

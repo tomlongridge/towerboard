@@ -21,7 +21,7 @@ class HomeController extends Controller
         } else {
             $boardCount = Board::count();
             $userCount = User::count();
-            $noticeCount = Notice::whereNull('expires')->orWhere('expires', '>', Carbon::now())->count();
+            $noticeCount = Notice::whereNull('deleted_at')->orWhere('deleted_at', '>', Carbon::now())->count();
             return view('welcome', compact('boardCount', 'userCount', 'noticeCount'));
         }
     }

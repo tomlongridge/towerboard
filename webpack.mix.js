@@ -25,7 +25,8 @@ mix.js(['resources/js/app.js', 'resources/js/sb-admin-2.js'], 'public/js')
             '@fortawesome/fontawesome-free',
             'bootstrap-select',
             'mapbox-gl',
-            'bootstrap-datepicker'
+            'bootstrap-datepicker',
+            'summernote'
         ]);
 
 mix.sass('resources/sass/app.scss', 'public/css/app.css');
@@ -38,8 +39,10 @@ mix.combine([
     'node_modules/bootstrap-select/dist/css/bootstrap-select.css',
     'node_modules/mapbox-gl/dist/mapbox-gl.css',
     'node_modules/bootstrap-datepicker/dist/css/bootstrap-datepicker3.css',
+    'node_modules/summernote/dist/summernote.css',
 ], 'public/css/vendor.css');
 mix.copyDirectory('node_modules/@fortawesome/fontawesome-free/webfonts', 'public/webfonts');
+mix.copyDirectory('node_modules/summernote/dist/font', 'public/css/font');
 
 if (mix.inProduction()) {
     mix.version();

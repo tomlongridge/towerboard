@@ -108,21 +108,6 @@ class Board extends Model
         return $this->isSubscribed($user, SubscriptionType::ADMIN);
     }
 
-    public function getActiveNotices()
-    {
-        $allNotices = $this->notices();
-        if (!$this->isAdmin()) {
-            $allNotices->where(function ($query) {
-                $query->whereNull('expires')
-                      ->orWhere('expires', '>', Carbon::now());
-                if (Auth::check()) {
-                      $query->orWhere('created_by', auth()->id());
-                }
-            });
-        }
-        return $allNotices->get();
-    }
-
     public function notices()
     {
         return $this->hasMany(Notice::class);
@@ -179,5 +164,15 @@ class Board extends Model
         return $this->belongsToMany('App\Board', 'board_affiliates', 'board_id', 'affiliate_id')
                     ->using('App\BoardAffiliate')
                     ->withTimestamps();
+    }
+
+    public function getFacebookUrl()
+    {
+        return 'https://www.facebook.com/' . $this->facebook_url;
+    }
+
+    public function getTwitterUrl()
+    {
+        return 'https://www.twitter.com/' . $this->twitter_handle;
     }
 }

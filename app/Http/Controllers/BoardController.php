@@ -26,12 +26,7 @@ class BoardController extends Controller
      */
     public function index()
     {
-        if (!Auth::guest()) {
-            $boards = Auth::user()->subscriptions;
-            return view('boards.index', compact('boards'));
-        } else {
-            return $this->search();
-        }
+        return $this->search();
     }
 
     public function search()
@@ -75,9 +70,23 @@ class BoardController extends Controller
     public function show(Board $board)
     {
         $user = auth()->user();
-        $notices = $board->getActiveNotices();
+        $notices = $board->notices()->active()->get();
 
         return view('boards.show', compact('board', 'notices'));
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  \App\Board  $board
+     * @return \Illuminate\Http\Response
+     */
+    public function archive(Board $board)
+    {
+        $user = auth()->user();
+        $notices = $board->notices()->archived()->get();
+
+        return view('boards.archive', compact('board', 'notices'));
     }
 
     /**

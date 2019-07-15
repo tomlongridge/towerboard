@@ -11,9 +11,9 @@ use BenSampo\Enum\Traits\CastsEnums;
 use App\Http\Requests\NoticeRequest;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\NoticeReply;
-use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class BoardNoticeController extends Controller
 {
@@ -55,9 +55,7 @@ class BoardNoticeController extends Controller
     {
         $this->authorize('create', [Notice::class, $board]);
 
-        $board->addNotice($request->merge([
-            'created_by' => auth()->id(),
-        ])->all());
+        $board->addNotice($request->except('files'));
 
         return redirect(route('boards.show', ['board' => $board->name]));
     }
@@ -97,8 +95,42 @@ class BoardNoticeController extends Controller
     {
         $this->authorize('update', [$notice, $board]);
 
-        $notice->update($request->all());
+        $notice->update($request->except('files'));
         return redirect(route('notices.show', ['board' => $board->name, 'notice' => $notice->id]));
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Notice  $notice
+     * @return \Illuminate\Http\Response
+     */
+    public function archive(Board $board, Notice $notice)
+    {
+        $this->authorize('delete', [$notice, $board]);
+
+        $notice->update([
+            'deleted_at' => Carbon::now()
+        ]);
+
+        return redirect(route("notices.show", ['board' => $board->name, 'notice' => $notice->id]));
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Notice  $notice
+     * @return \Illuminate\Http\Response
+     */
+    public function unarchive(Board $board, Notice $notice)
+    {
+        $this->authorize('delete', [$notice, $board]);
+
+        $notice->update([
+            'deleted_at' => null
+        ]);
+
+        return redirect(route("notices.show", ['board' => $board->name, 'notice' => $notice->id]));
     }
 
     /**

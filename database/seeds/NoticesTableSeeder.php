@@ -28,7 +28,7 @@ class NoticesTableSeeder extends Seeder
                     'created_by' => $createdBy,
                     'reply_to' => mt_rand(0, 1) ? $board->members()->inRandomOrder()->get()->first()->id : null,
                     'distribution' => SubscriptionType::BASIC,
-                    'expires' => mt_rand(0, 1) ? Carbon::now()->add(mt_rand(-30, 30), 'day') : null
+                    'deleted_at' => mt_rand(0, 1) ? Carbon::now()->add(mt_rand(-30, 30), 'day') : null
                 ]);
                 for ($j = 0; $j < mt_rand(0, 5); $j++) {
                     DB::table('notice_messages')->insert([

@@ -13,6 +13,7 @@ require('chart.js');
 require('@fortawesome/fontawesome-free');
 require('bootstrap-select');
 require('bootstrap-datepicker');
+require('summernote');
 window.mapboxgl = require('mapbox-gl');
 window.List = require('list.js');
 window.Vue = require('vue');

@@ -24,6 +24,10 @@ a[target="_blank"]:after {
   font-weight: 600;
 }
 
+a.btn[target="_blank"]:after {
+    content: "";
+}
+
 h2 {
   margin-top: 20px
 }
@@ -90,7 +94,6 @@ h2 {
 
 h1.notice {
   padding: 20px;
-  // padding-bottom: 20px;
 }
 
 div.notice {
@@ -102,4 +105,10 @@ div.notice {
 
 div.notice p {
   text-align: justify
+}
+
+.card-body {
+  &.notice {
+    min-height: 18rem;
+  }
 }

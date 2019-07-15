@@ -16,7 +16,7 @@
         <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
           <div class="dropdown-header">Actions:</div>
           <a class="dropdown-item" href="{{ route('notices.show', ['board' => $notice->board->name, 'notice' => $notice->id]) }}">View</a>
-          @if(isset($notice->replyTo) &&  !$notice->expired)
+          @if(isset($notice->replyTo) &&  !$notice->archived)
             <a class="dropdown-item" href="{{ route('notices.show', ['board' => $notice->board->name, 'notice' => $notice->id]) }}">Reply</a>
           @endif
           @can('update', $notice)
@@ -31,24 +31,10 @@
         </div>
       </div>
     </div>
-    <div class="card-body">
-
-        @if($notice->expired)
-        <div class="row bg-danger text-light py-2 mb-2 justify-content-center">
-            <strong>Expired:</strong>&nbsp;
-            {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->expires) !!}
-        </div>
-      @elseif(isset($notice->expires))
-        @can('update', $notice)
-          <div class="row bg-warning text-dark py-2 mb-2 justify-content-center">
-              <strong>Expires:</strong>&nbsp;
-              {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->expires) !!}
-          </div>
-        @endcan
-      @endif
+    <div class="card-body notice">
       <h5>{{ $notice->title }}</h5>
-      {!! str_limit(clean($notice->body), 500, '&hellip;</p>') !!}
-      <div class="row justify-content-center">
+      {!! str_limit(strip_tags($notice->body), 500, '&hellip;</p>') !!}
+      <div class="row float-right pr-2">
         <a href="{{ route('notices.show', ['board' => $notice->board->name, 'notice' => $notice->id]) }}" class="btn btn-primary btn-icon-split">
           <span class="text">Read More</span>
           <span class="icon text-white-50"><i class="fas fa-arrow-right"></i></span>

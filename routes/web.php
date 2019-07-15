@@ -25,6 +25,7 @@ Route::resource('/api/towers', 'TowerController');
 // Boards
 Route::get('/boards/search', 'BoardController@search')->name('boards.search');
 Route::resource('/boards', 'BoardController');
+Route::get('/boards/{board}/archive', 'BoardController@archive')->name('boards.archive');
 Route::get('/boards/{board}/committee', 'BoardController@committee')->name('boards.committee');
 Route::get('/boards/{board}/details', 'BoardController@details')->name('boards.details');
 Route::get('/boards/{board}/contact', 'BoardController@contact')->name('boards.contact');
@@ -37,6 +38,8 @@ Route::get('/boards/{board}/subscribe', 'BoardController@subscribe')->name('boar
 
 // Notices
 Route::resource('/boards/{board}/notices', 'BoardNoticeController');
+Route::delete('/boards/{board}/notices/{notice}/archive', 'BoardNoticeController@archive')->name('notices.archive');
+Route::post('/boards/{board}/notices/{notice}/archive', 'BoardNoticeController@unarchive')->name('notices.unarchive');
 Route::post('/boards/{board}/notices/{notice}/reply', 'BoardNoticeController@reply')->name('notices.reply');
 Route::resource('/boards/{board}/notices/{notice}/messages', 'NoticeMessageController');
 

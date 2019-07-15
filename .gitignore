@@ -2,6 +2,7 @@
 /public/hot
 /public/storage
 /public/webfonts
+/public/font
 /storage/*.key
 /vendor
 .env

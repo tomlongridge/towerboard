@@ -43,6 +43,8 @@ class BoardRequest extends FormRequest
             'name' => 'required|unique:boards,name,' . (isset($this->board) ? $this->board->id : -1) . ',id',
             'can_post' => ['required', new EnumValue(SubscriptionType::class)],
             'website_url' => 'nullable|url',
+            'twitter_handle' => 'nullable|regex:/^[A-Za-z_]{1,15}$/i',
+            'facebook_url' => 'nullable|regex:/^[A-Za-z0-9\.\-\/]+$/i',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
         ];
@@ -54,6 +56,8 @@ class BoardRequest extends FormRequest
             'name.required' => 'Please enter the name of the board',
             'name.unique' => 'This board name is already taken',
             'website_url.url' => 'The website address is not valid - it should start http:// or https://',
+            'twitter_handle.regex' => 'The Twitter handle should be only characters or underscores',
+            'facebook_url.regex' => 'The Facebook address is not valid - just include the part after facebook.com/',
         ];
     }
 }
