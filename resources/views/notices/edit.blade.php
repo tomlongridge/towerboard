@@ -56,7 +56,8 @@
               @endforeach
             </select>
           </div>
-          <div class="form-group">
+          <div class="row form-group">
+            <div class="col-6">
             @isset($notice)
               <a href="{{ route('notices.show', ['board' => $board, 'notice' => $notice]) }}" class="btn btn-secondary btn-icon-split">
             @else
@@ -65,10 +66,15 @@
               <span class="icon text-white-50"><i class="fas fa-arrow-left"></i></span>
               <span class="text">Back</span>
             </a>
+          </div>
+          <div class="col-6 text-right">
+            <input type="checkbox" id="notify" name="notify" value="true" {{ old('notify', !isset($notice)) ? 'checked' : '' }} />
+            <label for="notify" class="pr-2">Send Notification</label>
             <button type="submit" class="btn btn-success btn-icon-split">
               <span class="icon text-white-50"><i class="fas fa-check"></i></span>
               <span class="text">Save</span>
             </button>
+          </div>
           </div>
         </form>
       </div>
@@ -78,7 +84,7 @@
 
 @section('pagescripts')
 <script>
-  $('#edit-form').on('submit', function(event) {
+  $('#edit-formx').on('submit', function(event) {
     if (this.checkValidity() === false) {
       event.preventDefault();
       event.stopPropagation();

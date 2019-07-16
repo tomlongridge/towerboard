@@ -8,6 +8,8 @@ use App\Board;
 use App\Notice;
 use App\User;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NoticeUpdated;
 
 class NoticeMessageController extends Controller
 {
@@ -54,7 +56,14 @@ class NoticeMessageController extends Controller
         NoticeMessage::create($request->merge([
             'notice_id' => $notice->id,
             'created_by' => auth()->id()
-        ])->all());
+        ])->except('notify'));
+
+        if ($request->notify) {
+            Notification::send(
+                $notice->board->subscribers()->wherePivot('type', '>=', $notice->distribution->value)->get(),
+                new NoticeUpdated($notice)
+            );
+        }
 
         $request->session()->flash('success', "The message has been posted.");
         return redirect(route('notices.show', ['board' => $board, 'notice' => $notice]));
@@ -104,6 +113,13 @@ class NoticeMessageController extends Controller
         $message->update([
             'message' => $request->message,
         ]);
+
+        if ($request->notify) {
+            Notification::send(
+                $notice->board->subscribers()->wherePivot('type', '>=', $notice->distribution->value)->get(),
+                new NoticeUpdated($notice)
+            );
+        }
 
         $request->session()->flash('success', "The message has been updated.");
         return redirect(route('notices.show', ['board' => $board, 'notice' => $notice]));

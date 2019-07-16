@@ -107,14 +107,22 @@
 
           <div class="form-group row mb-0">
             <div class="col-md-6 offset-md-4">
-              <a href="#" class="btn btn-secondary btn-icon-split" onclick="toggleViewMessage({{ $follow_up->id }}); return false">
-                <span class="icon text-white-50"><i class="fas fa-times"></i></span>
-                <span class="text">Cancel</span>
-              </a>
-              <button type="submit" class="btn btn-success btn-icon-split">
-                <span class="icon text-white-50"><i class="fas fa-check"></i></span>
-                <span class="text">Update</span>
-              </button>
+              <div class="row">
+                <div class="col">
+                  <a href="#" class="btn btn-secondary btn-icon-split" onclick="toggleViewMessage({{ $follow_up->id }}); return false">
+                    <span class="icon text-white-50"><i class="fas fa-times"></i></span>
+                    <span class="text">Cancel</span>
+                  </a>
+                </div>
+                <div class="col text-right">
+                  <input type="checkbox" id="notify" name="notify" value="true" />
+                  <label for="notify" class="pr-2">Send Notification</label>
+                  <button type="submit" class="btn btn-success btn-icon-split">
+                    <span class="icon text-white-50"><i class="fas fa-check"></i></span>
+                    <span class="text">Update</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -147,7 +155,9 @@
             </div>
 
             <div class="form-group row mb-0">
-              <div class="col-md-6 offset-md-4">
+              <div class="col-md-6 offset-md-4 text-right">
+                <input type="checkbox" id="notify" name="notify" value="true" {{ old('notify', true) ? 'checked' : '' }} />
+                <label for="notify" class="pr-2">Send Notification</label>
                 <button type="submit" class="btn btn-success btn-icon-split">
                   <span class="icon text-white-50"><i class="fas fa-check"></i></span>
                   <span class="text">Post</span>

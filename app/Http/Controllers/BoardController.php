@@ -70,7 +70,7 @@ class BoardController extends Controller
     public function show(Board $board)
     {
         $user = auth()->user();
-        $notices = $board->notices()->active()->get();
+        $notices = $board->notices()->active()->orderBy('created_at', 'desc')->get();
 
         return view('boards.show', compact('board', 'notices'));
     }
@@ -84,7 +84,7 @@ class BoardController extends Controller
     public function archive(Board $board)
     {
         $user = auth()->user();
-        $notices = $board->notices()->archived()->get();
+        $notices = $board->notices()->archived()->orderBy('created_at', 'desc')->get();
 
         return view('boards.archive', compact('board', 'notices'));
     }

@@ -14,6 +14,9 @@ use App\Mail\NoticeReply;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NoticeCreated;
+use App\Notifications\NoticeUpdated;
 
 class BoardNoticeController extends Controller
 {
@@ -55,7 +58,14 @@ class BoardNoticeController extends Controller
     {
         $this->authorize('create', [Notice::class, $board]);
 
-        $board->addNotice($request->except('files'));
+        $notice = $board->addNotice($request->except(['files', 'notify']));
+
+        if ($request->notify) {
+            Notification::send(
+                $notice->board->subscribers()->wherePivot('type', '>=', $notice->distribution->value)->get(),
+                new NoticeCreated($notice)
+            );
+        }
 
         return redirect(route('boards.show', ['board' => $board->name]));
     }
@@ -95,7 +105,15 @@ class BoardNoticeController extends Controller
     {
         $this->authorize('update', [$notice, $board]);
 
-        $notice->update($request->except('files'));
+        $notice->update($request->except(['files', 'notify']));
+
+        if ($request->notify) {
+            Notification::send(
+                $notice->board->subscribers()->wherePivot('type', '>=', $notice->distribution->value)->get(),
+                new NoticeUpdated($notice)
+            );
+        }
+
         return redirect(route('notices.show', ['board' => $board->name, 'notice' => $notice->id]));
     }
 
