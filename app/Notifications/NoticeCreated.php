@@ -8,9 +8,8 @@ use App\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 
-class NoticeCreated extends Notification
+class NoticeCreated extends Notification implements ShouldQueue
 {
     use Queueable;
 
