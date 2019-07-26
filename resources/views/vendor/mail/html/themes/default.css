@@ -28,11 +28,11 @@ ul,
 ol,
 blockquote {
     line-height: 1.4;
-    text-align: left;
+    text-align: justify;
 }
 
 a {
-    color: #3869d4;
+    color: #4e73df;
 }
 
 a img {
@@ -42,35 +42,51 @@ a img {
 /* Typography */
 
 h1 {
-    color: #3d4852;
-    font-size: 19px;
+    color: #5a5c69;
+    font-size: 24px;
     font-weight: bold;
     margin-top: 0;
     text-align: left;
+    padding-left: 1em;
+    padding-right: 1em;
+    hyphens: none;
 }
 
 h2 {
-    color: #3d4852;
+    color: #5a5c69;
     font-size: 16px;
     font-weight: bold;
     margin-top: 0;
     text-align: left;
+    padding-left: 1em;
+    padding-right: 1em;
+    hyphens: none;
 }
 
 h3 {
-    color: #3d4852;
+    color: #5a5c69;
     font-size: 14px;
     font-weight: bold;
     margin-top: 0;
     text-align: left;
+    padding-left: 1em;
+    padding-right: 1em;
+    hyphens: none;
 }
 
 p {
-    color: #3d4852;
+    color: #5a5c69;
     font-size: 16px;
     line-height: 1.5em;
     margin-top: 0;
-    text-align: left;
+    text-align: justify;
+    background-color: white;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    margin-bottom: 0px;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-radius: 0.35rem;
 }
 
 p.sub {
@@ -107,10 +123,12 @@ img {
 .header {
     padding: 25px 0;
     text-align: center;
+    border-bottom: 0.25rem solid #4e73df;
+    border-radius: 0.35rem;
 }
 
 .header a {
-    color: #bbbfc3;
+    color: #5a5c69;
     font-size: 19px;
     font-weight: bold;
     text-decoration: none;
@@ -120,7 +138,7 @@ img {
 /* Body */
 
 .body {
-    background-color: #ffffff;
+    background-color: #eaecf4;
     border-bottom: 1px solid #edeff2;
     border-top: 1px solid #edeff2;
     margin: 0;
@@ -132,13 +150,13 @@ img {
 }
 
 .inner-body {
-    background-color: #ffffff;
+    background-color: #eaecf4;
     margin: 0 auto;
     padding: 0;
-    width: 570px;
+    width: 720px;
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
-    -premailer-width: 570px;
+    -premailer-width: 720px;
 }
 
 /* Subcopy */
@@ -159,14 +177,15 @@ img {
     margin: 0 auto;
     padding: 0;
     text-align: center;
-    width: 570px;
+    width: 720px;
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
-    -premailer-width: 570px;
+    -premailer-width: 720px;
 }
 
 .footer p {
     color: #aeaeae;
+    background-color: #f8fafc;
     font-size: 12px;
     text-align: center;
 }

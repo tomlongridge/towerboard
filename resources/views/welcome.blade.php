@@ -2,7 +2,7 @@
 
 @section('content')
 
-  <h1 class="h3 mb-0 text-gray-800">Welcome to Towerboard &mdash; the virtual notice board for bell ringers</h1>
+  <h1 class="h3 mb-0 text-gray-800">Welcome to {{  config('app.name') }} &mdash; the virtual notice board for bell ringers</h1>
 
   <div class="row align-items-center justify-content-center">
 
@@ -13,7 +13,7 @@
         </div>
         <div class="card-body">
           <ul>
-            <li>Use Towerboard to see notices from towers or groups that you belong to.</li>
+            <li>Use {{  config('app.name') }} to see notices from towers or groups that you belong to.</li>
             <li>Subscribe to boards to receive notices via email.</li>
             <li>Check notices and send a message to towers that you are visiting.</li>
           </ul>

@@ -17,6 +17,14 @@
     </div>
   </div>
 
+  @if (!$activeBoard->isApproved())
+  <div class="alert alert-warning alert-block">
+    <strong>Approval Pending</strong>: this board is only visible to you and cannot be accessed by other users until it has been
+    approved by the {{  config('app.name') }} administrator.
+    Please contact <a href="mailto:{{ config('mail.from.address') }}">{{ config('mail.from.name') }}</a> for more information.
+  </div>
+  @endif
+
   @yield('subcontent')
 
 @endsection

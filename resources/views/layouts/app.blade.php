@@ -123,7 +123,7 @@
             <span>Find Boards</span>
           </a>
         </li>
-        @auth
+        @can('create', \App\Board::class)
           <li class="nav-item {{ Route::is('boards.create') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('boards.create') }}">
               <i class="fas fa-fw fa-plus"></i>
@@ -131,7 +131,7 @@
               <span>Create Board</span>
             </a>
           </li>
-        @endauth
+        @endcan
 
       @endisset
 

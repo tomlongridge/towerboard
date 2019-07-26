@@ -15,10 +15,18 @@
             <textarea name="emails" class="form-control {{ !$errors->isEmpty() ? 'is-invalid' : '' }}" required>{{ old('emails') }}</textarea>
             <div class="invalid-feedback">@if(!$errors->isEmpty()) @foreach ($errors->all() as $error) {{ $error }} @endforeach @else Please enter at least one email address. Separate multiple addresses using a comma. @endif</div>
           </div>
-          <button type="submit" class="btn btn-success btn-icon-split">
-            <span class="icon text-white-50"><i class="fas fa-plus"></i></span>
-            <span class="text">Add</span>
-          </button>
+          @can('subscribeUsers', $board)
+            <button type="submit" class="btn btn-success btn-icon-split">
+              <span class="icon text-white-50"><i class="fas fa-plus"></i></span>
+              <span class="text">Add</span>
+            </button>
+          @else
+            <button type="button" class="btn btn-success btn-icon-split" disabled>
+              <span class="icon text-white-50"><i class="fas fa-plus"></i></span>
+              <span class="text">Add</span>
+            </button>
+            <small>(You cannot add members until the board has been approved.)</small>
+          @endcan
         </form>
       </div>
     </div>

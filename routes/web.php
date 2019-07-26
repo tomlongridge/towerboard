@@ -34,7 +34,7 @@ Route::post('/boards/{board}/contact', 'BoardController@contactSend')
        ->middleware('verified');
 Route::get('/boards/{board}/members', 'BoardController@members')->name('boards.members');
 Route::get('/boards/{board}/members/add', 'BoardController@addMembers')->name('boards.members.add');
-Route::get('/boards/{board}/subscribe', 'BoardController@subscribe')->name('boards.subscribe')->middleware('guest');
+Route::get('/boards/{board}/subscribe', 'BoardController@subscribe')->name('boards.subscribe');
 
 // Notices
 Route::resource('/boards/{board}/notices', 'BoardNoticeController');
@@ -42,6 +42,8 @@ Route::delete('/boards/{board}/notices/{notice}/archive', 'BoardNoticeController
 Route::post('/boards/{board}/notices/{notice}/archive', 'BoardNoticeController@unarchive')->name('notices.unarchive');
 Route::post('/boards/{board}/notices/{notice}/reply', 'BoardNoticeController@reply')->name('notices.reply');
 Route::resource('/boards/{board}/notices/{notice}/messages', 'NoticeMessageController');
+
+Route::get('/boards/{board}/notices/{notice}/mail/created', 'BoardNoticeController@showNoticeMail');
 
 // Subscription
 Route::post('/boards/{board}/subscriptions/users/{user?}', 'SubscriptionController@store')->name('subscriptions.store');

@@ -31,7 +31,7 @@ class BoardPolicy
      */
     public function view(?User $user, Board $board)
     {
-        return true;
+        return $board->isApproved() || ($user != null && $board->created_by == $user->id);
     }
 
     /**
@@ -42,7 +42,7 @@ class BoardPolicy
      */
     public function create(?User $user)
     {
-        return $user != null;
+        return $user != null && $user->hasVerifiedEmail();
     }
 
     /**
@@ -54,7 +54,12 @@ class BoardPolicy
      */
     public function update(User $user, Board $board)
     {
-        return $board->administrators()->where('id', $user->id)->exists();
+        return $board->isAdmin($user);
+    }
+
+    public function subscribeUsers(User $user, Board $board)
+    {
+        return $board->isAdmin($user) && $board->isApproved();
     }
 
     /**
@@ -66,7 +71,7 @@ class BoardPolicy
      */
     public function delete(User $user, Board $board)
     {
-        return $board->administrators()->where('id', $user->id);
+        return $board->isAdmin($user);
     }
 
     /**
@@ -78,7 +83,7 @@ class BoardPolicy
      */
     public function restore(User $user, Board $board)
     {
-        return $board->administrators()->where('id', $user->id);
+        return $board->isAdmin($user);
     }
 
     /**

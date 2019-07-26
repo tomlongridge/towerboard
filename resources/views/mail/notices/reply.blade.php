@@ -1,6 +1,6 @@
-@component('mail::message')
-# {{ $notice->board->readable_name }} Notice Board
-## Reply to Notice: {{ $notice->title }}
+@component('mail::message', ['header' => $notice->board->readable_name . ' Towerboard'])
+
+# Reply to Notice: {{ $notice->title }}
 
 > {{ $message }}
 

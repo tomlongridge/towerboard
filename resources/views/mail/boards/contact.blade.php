@@ -1,8 +1,8 @@
-@component('mail::message')
-# {{ $board->readable_name }}
-## Message from Contact Form
+@component('mail::message', ['header' => $board->readable_name . ' Towerboard'])
 
-The following message was sent on {{ \App\Helpers\TowerBoardUtils::dateToStr($sentAt) }} by {{ $sentFrom->name }} ({{ $sentFrom->email }}) using the contact form
+# Message from Contact Form
+
+The following message was sent on {{ \App\Helpers\Utils::dateToStr($sentAt) }} by {{ $sentFrom->name }} ({{ $sentFrom->email }}) using the contact form
 on the {{ $board->readable_name }} board:
 
 > {{ $messageBody }}

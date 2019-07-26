@@ -21,7 +21,7 @@
               @foreach ($notices as $key => $notice)
                 <tr>
                   <td>{{ $notice->title }}</td>
-                  <td>{{ \App\Helpers\TowerBoardUtils::dateToStr($notice->created_at) }}</td>
+                  <td>{{ \App\Helpers\Utils::dateToStr($notice->created_at) }}</td>
                   <td><a href="{{ route('notices.show', ['board' => $board, 'notice' => $notice]) }}">View</a></td>
                 </tr>
               @endforeach

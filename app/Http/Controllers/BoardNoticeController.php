@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NoticeCreated;
 use App\Notifications\NoticeUpdated;
+use App\Mail\NoticeCreated as AppNoticeCreated;
 
 class BoardNoticeController extends Controller
 {
@@ -78,6 +79,7 @@ class BoardNoticeController extends Controller
      */
     public function show(Board $board, Notice $notice)
     {
+        $this->authorize('view', $notice);
         return view('notices.show', compact('notice'));
     }
 
@@ -187,5 +189,10 @@ class BoardNoticeController extends Controller
         }
 
         return redirect(route('notices.show', ['board' => $board->name, 'notice' => $notice->id]));
+    }
+
+    public function showNoticeMail(Board $board, Notice $notice)
+    {
+        return new AppNoticeCreated($notice);
     }
 }

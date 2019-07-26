@@ -6,11 +6,10 @@ use App\Enums\SubscriptionType;
 use App\User;
 
 use BenSampo\Enum\Traits\CastsEnums;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use App\Enums\BoardStatus;
 
 class Board extends Model
 {
@@ -108,6 +107,11 @@ class Board extends Model
         return $this->isSubscribed($user, SubscriptionType::ADMIN);
     }
 
+    public function isApproved()
+    {
+        return $this->status > BoardStatus::UNAPPROVED;
+    }
+
     public function notices()
     {
         return $this->hasMany(Notice::class);
@@ -164,6 +168,13 @@ class Board extends Model
         return $this->belongsToMany('App\Board', 'board_affiliates', 'board_id', 'affiliate_id')
                     ->using('App\BoardAffiliate')
                     ->withTimestamps();
+    }
+
+    public function scopeActive($query)
+    {
+        return $query
+               ->where('status', '>', BoardStatus::UNAPPROVED)
+               ->orWhere('created_by', auth()->id());
     }
 
     public function getFacebookUrl()

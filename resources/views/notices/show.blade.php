@@ -68,7 +68,7 @@
       <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
         <h6 class="m-0 text-primary">
           <span class="font-weight-bold"><i class="fas fa-reply"></i> Update:</span>
-          {{ $follow_up->createdBy->name }}, {!! \App\Helpers\TowerBoardUtils::dateToUserStr($follow_up->created_at) !!}
+          {{ $follow_up->createdBy->name }}, {!! \App\Helpers\Utils::dateToUserStr($follow_up->created_at) !!}
         </h6>
         @if(!$notice->archived)
           <div class="dropdown no-arrow">
@@ -243,7 +243,7 @@
             <div class="col mr-2">
               <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Posted On</div>
               <div class="h5 mb-0 text-gray-800">
-                  {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->created_at) !!}
+                  {!! \App\Helpers\Utils::dateToUserStr($notice->created_at) !!}
               </div>
             </div>
             <div class="col-auto">
@@ -280,7 +280,7 @@
                   @if($notice->archived) Archived @else Expires @endif
                 </div>
                 <div class="h5 mb-0 text-gray-800">
-                    {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->deleted_at) !!}
+                    {!! \App\Helpers\Utils::dateToUserStr($notice->deleted_at) !!}
                 </div>
               </div>
               <div class="col-auto">

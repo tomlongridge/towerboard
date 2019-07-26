@@ -148,16 +148,15 @@ class SubscriptionController extends Controller
      */
     public function destroy(Request $request, Board $board, User $user)
     {
-        if ($request->method() == "GET") {
-            if (!$request->hasValidSignature()) {
-                abort(401);
-            }
-        } else {
+        if (Auth::check()) {
             if (!isset($user->id)) {
                 $user = Auth::user();
             }
             $this->authorize('delete', [BoardSubscription::class, $board, $user]);
+        } elseif (!$request->hasValidSignature()) {
+            abort(401);
         }
+
         $board->subscribers()->detach($user->id);
 
         $request->session()->flash('success', 'You have been unsubscribed from this board.');

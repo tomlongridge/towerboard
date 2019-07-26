@@ -11,6 +11,8 @@ use App\Http\Requests\BoardRequest;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BoardContactMessage;
 use Illuminate\Support\Facades\Validator;
+use App\Notifications\BoardCreated;
+use Illuminate\Support\Facades\Notification;
 
 class BoardController extends Controller
 {
@@ -31,7 +33,7 @@ class BoardController extends Controller
 
     public function search()
     {
-        $boards = Board::orderBy('name')->get();
+        $boards = Board::orderBy('name')->active()->get();
         return view('boards.search', compact('boards'));
     }
 
@@ -58,7 +60,11 @@ class BoardController extends Controller
             ['created_by' => auth()->id()]
         );
         $board->subscribe(auth()->user(), SubscriptionType::ADMIN);
-        return redirect(route('boards.details', ['board' => $board->name]));
+
+        Notification::send(auth()->user(), new BoardCreated($board));
+
+        $request->session()->flash('success', "Board created.");
+        return redirect(route('boards.details', ['board' => $board]));
     }
 
     /**
@@ -67,7 +73,7 @@ class BoardController extends Controller
      * @param  \App\Board  $board
      * @return \Illuminate\Http\Response
      */
-    public function show(Board $board)
+    public function show(Request $request, Board $board)
     {
         $user = auth()->user();
         $notices = $board->notices()->active()->orderBy('created_at', 'desc')->get();
@@ -189,6 +195,10 @@ class BoardController extends Controller
 
     public function subscribe(Board $board)
     {
-        return view('boards.subscribe', compact('board'));
+        if (Auth::check()) {
+            return redirect(route('subscriptions.destroy', ['board' => $board, 'user' => auth()->user()]));
+        } else {
+            return view('boards.subscribe', compact('board'));
+        }
     }
 }

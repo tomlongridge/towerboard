@@ -20,7 +20,7 @@ class NoticePolicy
      */
     public function view(?User $user, Notice $notice)
     {
-        return true;
+        return $notice->board->isApproved() || $notice->board->isAdmin($user);
     }
 
     /**

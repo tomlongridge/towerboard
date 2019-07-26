@@ -45,7 +45,7 @@
               <div class="col mr-2">
                 <div class="h5 mb-0 text-gray-800">
                     @subscriber($board)
-                      You are {{ \App\Helpers\TowerBoardUtils::strToNoun($board->getSubscription()->type->description) }} of this board
+                      You are {{ \App\Helpers\Utils::strToNoun($board->getSubscription()->type->description) }} of this board
                     @else
                       You are not subscribed to this board
                     @endsubscriber
@@ -107,7 +107,7 @@
                 <tr>
                   <td>{{ $user->name }}</td>
                   @admin($board)
-                    <td>{{ TowerBoardUtils::obscureEmail($user->email) }}</td>
+                    <td>{{ Utils::obscureEmail($user->email) }}</td>
                   @endadmin
                   <td>
                     @admin($board)

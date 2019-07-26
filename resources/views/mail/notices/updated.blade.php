@@ -1,16 +1,16 @@
-@component('mail::message')
-# {{ $notice->board->readable_name }} Notice Board
-## Updated: {{ $notice->title }}
+@component('mail::message', ['header' => $notice->board->readable_name . ' Towerboard'])
+
+# Updated: {{ $notice->title }}
 
 {!! $notice->body !!}
 
 @if(!$notice->messages->isEmpty())
 
-## Follow-Ups
+# Follow-Ups
 
 @foreach($notice->messages as $follow_up)
 
-**{{ $follow_up->createdBy->name }}**, {{ \App\Helpers\TowerBoardUtils::dateToStr($follow_up->created_at) }}:
+**{{ $follow_up->createdBy->name }}**, {{ \App\Helpers\Utils::dateToStr($follow_up->created_at) }}:
 {!! $follow_up->message !!}
 
 @endforeach

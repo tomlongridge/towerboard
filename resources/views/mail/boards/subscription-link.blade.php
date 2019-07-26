@@ -1,5 +1,6 @@
-@component('mail::message')
-# {{ $board->readable_name }}
+@component('mail::message', ['header' => $board->readable_name . ' Towerboard'])
+
+# {{ $board->readable_name }} Subscription
 
 You have requested to {{ $subscribe ? 'subscribe to' : 'unsubscribe from' }} the {{ $board->readable_name }} notice board.
 

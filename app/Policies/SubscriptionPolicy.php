@@ -23,7 +23,7 @@ class SubscriptionPolicy
         } elseif ($subscriber->id == $user->id) {
             return true;
         } else {
-            return $board->isAdmin($user);
+            return $board->isAdmin($user) && $board->isApproved();
         }
     }
 
@@ -40,7 +40,7 @@ class SubscriptionPolicy
 
     public function addUser(?User $user, Board $board)
     {
-        return $board->isAdmin($user);
+        return $board->isAdmin($user) && $board->isApproved();
     }
 
     /**

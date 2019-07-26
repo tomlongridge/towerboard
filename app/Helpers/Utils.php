@@ -5,7 +5,7 @@ namespace App\Helpers;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 
-class TowerBoardUtils
+class Utils
 {
     public static function obscureEmail($email)
     {

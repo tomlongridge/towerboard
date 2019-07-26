@@ -1,9 +1,10 @@
-@component('mail::message')
-# {{ $board->readable_name }}
+@component('mail::message', ['header' => $board->readable_name . ' Towerboard'])
 
-You have been added to {{ $board->readable_name }} notice board by {{ $addedBy->name }}.
+# {{ $board->readable_name }} Subscribed
 
-Towerboard is a online version of your tower notice board - helping towers communicate with their members
+You have been added to {{ $board->readable_name }} board by {{ $addedBy->name }}.
+
+{{  config('app.name') }} is a virtual notice board for bell ringers - helping towers and ringing groups communicate with their members
 and the wider ringing community.
 
 @component('mail::subcopy')

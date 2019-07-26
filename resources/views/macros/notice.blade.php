@@ -6,7 +6,7 @@
           <a href="{{ route('boards.show', ['board' => $notice->board->name]) }}">{{ $notice->board->readable_name }}</a>
         @else
           <strong>{{ $notice->createdBy->name }}</strong>,
-            {!! \App\Helpers\TowerboardUtils::dateToUserStr($notice->created_at) !!}
+            {!! \App\Helpers\Utils::dateToUserStr($notice->created_at) !!}
         @endif
       </h6>
       <div class="dropdown no-arrow">
@@ -33,7 +33,7 @@
     </div>
     <div class="card-body notice">
       <h5>{{ $notice->title }}</h5>
-      {!! str_limit(strip_tags($notice->body), 500, '&hellip;</p>') !!}
+      <p>{!! str_limit(strip_tags($notice->body), 500, '&hellip;</p>') !!}</p>
       <div class="row float-right pr-2">
         <a href="{{ route('notices.show', ['board' => $notice->board->name, 'notice' => $notice->id]) }}" class="btn btn-primary btn-icon-split">
           <span class="text">Read More</span>

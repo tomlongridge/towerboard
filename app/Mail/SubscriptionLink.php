@@ -5,7 +5,6 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class SubscriptionLink extends Mailable
 {
@@ -44,6 +43,6 @@ class SubscriptionLink extends Mailable
               ]
           )
           ->subject(($this->subscribe ? "Subscribe to" : "Unsubscribe from") .
-                    " {$this->board->readable_name} on Towerboard");
+                    " {$this->board->readable_name} on " . config('app.name'));
     }
 }

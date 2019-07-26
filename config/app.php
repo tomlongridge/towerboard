@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => 'Towerboard',
+    'name' => env('APP_NAME'),
 
     /*
     |--------------------------------------------------------------------------
@@ -228,7 +228,7 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
 
-        'TowerBoardUtils' => App\Helpers\TowerBoardUtils::class,
+        'Utils' => App\Helpers\Utils::class,
 
     ],
 

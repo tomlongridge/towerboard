@@ -7,7 +7,6 @@ use App\Board;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use App\User;
 
 class UserSubscribed extends Mailable
@@ -46,7 +45,7 @@ class UserSubscribed extends Mailable
                     'addedBy' => $this->addedBy,
                 ]
             )
-            ->subject("Welcome to the {$this->board->readable_name} Towerboard")
+            ->subject("Welcome to the {$this->board->readable_name} Board")
             ->from($this->addedBy->email, $this->addedBy->name);
     }
 }

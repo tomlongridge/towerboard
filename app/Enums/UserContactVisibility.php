@@ -18,7 +18,7 @@ final class UserContactVisibility extends Enum
         } elseif ($value === self::MEMBERS) {
             return 'Members of the board';
         } elseif ($value === self::GUILD) {
-            return 'Registered users of Towerboard';
+            return 'Registered users';
         } elseif ($value === self::EVERYONE) {
             return 'Publicly visible to everyone';
         }

@@ -15,10 +15,10 @@
         <div class="card-body px-5">
           <p>
             The easiest way to manage the emails that your receive is to
-            <a href="{{ route('register') }}">create a Towerboard account</a>,
+            <a href="{{ route('register') }}">create a {{  config('app.name') }} account</a>,
             login and choose the boards that you wish to subscribe to or visit the My Account page to
             manage your exising subscriptions.
-            If you have been receiving emails from Towerboard but have not set a password (or cannot
+            If you have been receiving emails from {{  config('app.name') }} but have not set a password (or cannot
             remember it), then you can reset it <a href="{{ route('password.request') }}">here</a>.
           </p>
           <p>

@@ -26,7 +26,8 @@ mix.js(['resources/js/app.js', 'resources/js/sb-admin-2.js'], 'public/js')
             'bootstrap-select',
             'mapbox-gl',
             'bootstrap-datepicker',
-            'summernote'
+            'summernote',
+            'lodash'
         ]);
 
 mix.sass('resources/sass/app.scss', 'public/css/app.css');

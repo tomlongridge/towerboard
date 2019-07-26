@@ -8,15 +8,15 @@
 
       <div class="card shadow mb-4">
         <div class="card-header py-3">
-          <h6 class="m-0 font-weight-bold text-primary">Registering on Towerboard</h6>
+          <h6 class="m-0 font-weight-bold text-primary">Registering on {{  config('app.name') }}</h6>
         </div>
         <div class="card-body px-5">
           <p>
-            You need an account on Towerboard in order to create a board; post to it; and manage the
+            You need an account on {{  config('app.name') }} in order to create a board; post to it; and manage the
             settings and members.
           </p>
           <p>
-            You can browse boards and receive posts from Towerboard via email without an account. Or
+            You can browse boards and receive posts from {{  config('app.name') }} via email without an account. Or
             you can register for one later and more easily manage your preferences.
           </p>
           <div class="float-right">

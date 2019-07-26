@@ -44,7 +44,7 @@ class BoardsTableSeeder extends Seeder{
         ]);
 
         $tower = Tower::where('area', '=', 'Bathwick')->first();
-        $towerBoardId = DB::table('boards')->insertGetId([
+        $boardId = DB::table('boards')->insertGetId([
             'name' => 'bathwick',
             'readable_name' => 'Bathwick',
             'website_url' => 'http://bathwick.brinkster.net',
@@ -65,7 +65,7 @@ class BoardsTableSeeder extends Seeder{
         ]);
 
         DB::table('board_affiliates')->insert([
-            'board_id' => $towerBoardId,
+            'board_id' => $boardId,
             'affiliate_id' => $branchBoardId
         ]);
 

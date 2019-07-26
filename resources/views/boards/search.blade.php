@@ -45,8 +45,15 @@
 
     </div>
 
-    @auth
-        <a class="btn btn-primary" id="menu-toggle" href="{{ route('boards.create') }}">Create</a>
+    @can('create', \App\Board::class)
+      <div class="row">
+        <div class="col text-right">
+        <a href="{{ route('boards.create') }}" class="btn btn-primary btn-icon-split">
+          <span class="text">Create Board</span>
+          <span class="icon text-white-50"><i class="fas fa-fw fa-plus"></i></span>
+        </a>
+        </div>
+      </div>
     @endauth
 
 @endsection

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 use App\Enums\SubscriptionType;
+use App\Enums\BoardStatus;
 
 class CreateBoard extends Migration
 {
@@ -34,6 +35,7 @@ class CreateBoard extends Migration
             $table->float('latitude', 9, 6)->nullable();
             $table->float('longitude', 9, 6)->nullable();
             $table->unsignedTinyInteger('can_post')->default(SubscriptionType::ADMIN);
+            $table->unsignedTinyInteger('status')->default(BoardStatus::UNAPPROVED);
 
             $table->softDeletes();
         });

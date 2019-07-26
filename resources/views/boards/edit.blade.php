@@ -48,15 +48,8 @@
             </span>
           </div>
         </div>
-        <div class="form-group">
-            <label for="readable_name">Name</label>
-            <input type="text" class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}" id="readable_name" name="readable_name" placeholder="My Tower"
-            value="{{ old('readable_name', isset($board) ? $board->readable_name : '') }}" required/>
-            <div class="invalid-feedback">@error('name') {{ $message }} @else Please enter the name of the board. @enderror</div>
-            <small>(A short unique name for your board to be used for the page address.)</small>
-        </div>
         <div class="form-group" id="tower-row"
-        @if(!isset($board) || $board->type != \App\Enums\BoardType::TOWER)
+        @if(isset($board) && $board->type != \App\Enums\BoardType::TOWER)
              style="display:none"
         @endif
         >
@@ -68,6 +61,13 @@
                     </option>
                 @endisset
             </select>
+        </div>
+        <div class="form-group">
+            <label for="readable_name">Name</label>
+            <input type="text" class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}" id="readable_name" name="readable_name" placeholder="My Tower"
+                  value="{{ old('readable_name', isset($board) ? $board->readable_name : '') }}" required/>
+            <div class="invalid-feedback">@error('name') {{ $message }} @else Please enter the name of the board. @enderror</div>
+            <small>(A short unique name for your board to be used for the page address: <span id="board_url" style="font-weight: bold; color: blue; text-decoration: underline"></span>)</small>
         </div>
         <div class="form-group">
           <label for="website_url">Website</label>
@@ -95,7 +95,7 @@
               <div class="input-group-text">@</div>
             </div>
             <input type="text" class="form-control {{ $errors->has('twitter_handle') ? 'is-invalid' : '' }}" id="twitter_handle" name="twitter_handle"
-                   placeholder="@@mytower" value="{{ old('twitter_handle', isset($board) ? $board->twitter_handle : '') }}"
+                   placeholder="mytower" value="{{ old('twitter_handle', isset($board) ? $board->twitter_handle : '') }}"
                    pattern="[A-Za-z_]{1,15}" />
             <div class="invalid-feedback">@error('twitter_handle') {{ $message }} @else The Twitter handle should be only characters or underscores @enderror</div>
           </div>
@@ -116,17 +116,17 @@
             <div class="form-group row pt-2">
               <label for="latitude">Lat:</label>
               <div class="col-md-2">
-                <input type="number" min="-90" max="90" step="any" id="latitude" name="latitude" placeholder=""
+                <input type="number" min="-90" max="90" step="any" id="latitude" name="latitude" placeholder="-0.1268141"
                         class="form-control {{ $errors->has('latitude') ? 'is-invalid' : '' }}"
                         value="{{ old('latitude', isset($board) ? $board->latitude : '') }}" />
                 <div class="invalid-feedback">@error('latitude') {{ $message }} @else Invalid latitude - must be between -90 and 90 @enderror</div>
               </div>
               <label for="longitude">Lon:</label>
               <div class="col-md-2">
-                <input type="number" min="-180" max="180" step="any" id="longitude" name="longitude" placeholder=""
+                <input type="number" min="-180" max="180" step="any" id="longitude" name="longitude" placeholder="51.5007292"
                         class="form-control {{ $errors->has('longitude') ? 'is-invalid' : '' }}"
                         value="{{ old('longitude', isset($board) ? $board->longitude : '') }}" />
-                <div class="invalid-feedback">@error('longitude') {{ $message }} @else Invalid longitude - must be between -90 and 90 @enderror</div>
+                <div class="invalid-feedback">@error('longitude') {{ $message }} @else Invalid longitude - must be between -180 and 180 @enderror</div>
               </div>
             </div>
           </div>
@@ -144,19 +144,23 @@
             @endforeach
           </select>
         </div>
-        <div class="form-group">
-          @isset($board)
-            <a href="{{ route('boards.details', ['board' => $board]) }}" class="btn btn-secondary btn-icon-split">
-          @else
-            <a href="{{ route('boards.index') }}" class="btn btn-secondary btn-icon-split">
-          @endisset
-            <span class="icon text-white-50"><i class="fas fa-arrow-left"></i></span>
-            <span class="text">Back</span>
-          </a>
-          <button type="submit" class="btn btn-success btn-icon-split">
-            <span class="icon text-white-50"><i class="fas fa-check"></i></span>
-            <span class="text">Save</span>
-          </button>
+        <div class="row form-group">
+          <div class="col-6">
+            @isset($board)
+              <a href="{{ route('boards.details', ['board' => $board]) }}" class="btn btn-secondary btn-icon-split">
+            @else
+              <a href="{{ route('boards.index') }}" class="btn btn-secondary btn-icon-split">
+            @endisset
+              <span class="icon text-white-50"><i class="fas fa-arrow-left"></i></span>
+              <span class="text">Back</span>
+            </a>
+          </div>
+          <div class="col-6 text-right">
+            <button type="submit" class="btn btn-success btn-icon-split">
+              <span class="icon text-white-50"><i class="fas fa-check"></i></span>
+              <span class="text">Save</span>
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -182,6 +186,20 @@
     this.classList.add('was-validated');
   });
 
+  function calculateBoardName(text) {
+    var fullText = $('#readable_name').val();
+    var boardName = _.toLower(fullText).replace(/\s/g, '-').replace(/[^a-z0-9\-]/g, '').replace(/-{2,}/g, '-');
+    if (boardName == '') {
+      boardName = 'my-tower';
+    }
+    $('#board_url').html(window.location.protocol + "{{ route('boards.index') }}/" + boardName);
+  }
+
+  $('#readable_name').on('keyup', function(event) {
+    calculateBoardName();
+  });
+  calculateBoardName();
+
   $('#tower').selectize({
     preload: true,
     valueField: 'id',
@@ -206,12 +224,31 @@
     },
     render: {
       option: function(item, escape) {
-        return '<div class="tb-dropdown-option">' + item.name + '</div>';
+        return '<div class="tb-dropdown-option" ' +
+               'data-dedication="' + item.dedication + '" ' +
+               'data-county="' + item.county + '" ' +
+               'data-town="' + item.town + '" ' +
+               'data-area="' + item.area + '" ' +
+               'data-name="' + item.name + '">' + item.name + '</div>';
       },
       item: function(item, escape) {
-        return '<div class="tb-dropdown-item">' + item.name + '</div>';
+        return '<div class="tb-dropdown-item" ' +
+               'data-dedication="' + item.dedication + '" ' +
+               'data-county="' + item.county + '" ' +
+               'data-town="' + item.town + '" ' +
+               'data-area="' + item.area + '" ' +
+               'data-name="' + item.name + '">' + item.name + '</div>';
       }
     },
+    onChange: function(value) {
+      var selectedOption = $('#tower')[0].selectize.getOption(value);
+      $('#readable_name').val(
+        selectedOption.data('town') + ' ' +
+        (selectedOption.data('area') ? selectedOption.data('area') + ' ' : '') +
+        selectedOption.data('dedication')
+      );
+      calculateBoardName();
+    }
   });
 </script>
 
