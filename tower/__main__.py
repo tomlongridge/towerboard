@@ -1,4 +1,8 @@
-"""Entry point: ``python -m tower``."""
+"""Entry point: ``python -m tower``.
+
+    python -m tower serve [--dev]          application process: web app and admin
+    python -m tower --source=synthetic     pulse pipeline, envelopes to stdout
+"""
 
 from __future__ import annotations
 
@@ -8,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-from tower import __version__, config, pipeline
+from tower import config, pipeline, version
 from tower.clock import Clock, FakeClock, SystemClock
 from tower.events import SCHEMA_VERSION
 from tower.rt.source import PulseSource, SyntheticParams, SyntheticSource
@@ -51,11 +55,20 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         action="store_true",
         help="use a fake clock: run as fast as possible with deterministic output",
     )
-    p.add_argument("--version", action="version", version=f"tower {__version__} (events v{SCHEMA_VERSION})")
+    p.add_argument("--version", action="version", version=f"tower {version.full_version()} (events v{SCHEMA_VERSION})")
     return p.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["serve"]:
+        from tower import app
+
+        return app.main(argv[1:])
+    return run_pipeline(argv)
+
+
+def run_pipeline(argv: Sequence[str]) -> int:
     args = parse_args(argv)
     logging.basicConfig(stream=sys.stderr, format="%(levelname)s %(name)s: %(message)s")
 
@@ -75,7 +88,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         log.error("%s", e)
         return 2
 
-    log.info("tower %s: %s, source=%s", __version__, cfg.tower.name, cfg.source.kind)
+    log.info("tower %s: %s, source=%s", version.full_version(), cfg.tower.name, cfg.source.kind)
     try:
         n = pipeline.run(source, sys.stdout, cfg.source.kind)
     except KeyboardInterrupt:

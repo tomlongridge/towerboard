@@ -62,6 +62,25 @@ class ConfigTest(unittest.TestCase):
         with self.assertRaisesRegex(config.ConfigError, "source.kind"):
             self.load()
 
+    def test_save_overrides_merges_and_validates(self):
+        config.save_overrides("network", {"mode": "dual"}, self.overrides)
+        config.save_overrides("network", {"uplink_ssid": "Church"}, self.overrides)
+        cfg = self.load()
+        self.assertEqual((cfg.network.mode, cfg.network.uplink_ssid), ("dual", "Church"))
+        self.assertEqual(self.overrides.stat().st_mode & 0o777, 0o600)
+        for section, values in (("network", {"mode": "mesh"}), ("network", {"ap_psk": "short"}),
+                                ("nope", {"x": 1}), ("web", {"port": "eighty"})):
+            with self.subTest(values=values), self.assertRaises(config.ConfigError):
+                config.save_overrides(section, values, self.overrides)
+        self.assertEqual(self.load().network.mode, "dual")  # rejected writes changed nothing
+
+    def test_list_values(self):
+        self.tower.write_text('[update]\nunits = ["tower.service", "tower-rt.service"]\n')
+        self.assertEqual(self.load().update.units, ["tower.service", "tower-rt.service"])
+        self.tower.write_text('[update]\nunits = [1]\n')
+        with self.assertRaises(config.ConfigError):
+            self.load()
+
     def test_env_vars_locate_files(self):
         self.tower.write_text('[tower]\nname = "From env"\n')
         with mock.patch.dict(os.environ, {"TOWER_CONFIG": str(self.tower),

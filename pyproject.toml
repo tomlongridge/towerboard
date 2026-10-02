@@ -6,7 +6,10 @@ readme = "README.md"
 # Pinned to the Pi's shipped interpreter (Raspberry Pi OS Bookworm: 3.11); see .python-version.
 requires-python = ">=3.11"
 # Stdlib-only by default. Accepted exceptions are recorded in tower-system-design.md §3.
-dependencies = []
+# Pure-Python only: releases vendor these so an offline tower never needs pip.
+dependencies = [
+    "segno>=1.6.6",
+]
 
 # No [build-system]: uv treats this as a virtual project and does not install it.
 # The app always runs from the release tree as `python -m tower`.

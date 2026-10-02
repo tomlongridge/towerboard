@@ -35,6 +35,7 @@ OVERRIDES_PATH = Path("/var/lib/tower/overrides.json")
 
 SOURCE_KINDS = ("synthetic",)  # serial: M2, replay: M3
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
+NETWORK_MODES = ("ap", "joined", "dual")
 
 
 class ConfigError(ValueError):
@@ -69,11 +70,60 @@ class LogSection:
 
 
 @dataclass(frozen=True)
+class PathsSection:
+    state_dir: str = "/var/lib/tower"  # state, never inside a release
+    opt_dir: str = "/opt/tower"  # releases/, current, previous
+
+
+@dataclass(frozen=True)
+class WebSection:
+    host: str = "0.0.0.0"
+    port: int = 80
+
+
+@dataclass(frozen=True)
+class AdminSection:
+    session_hours: float = 12.0
+
+
+@dataclass(frozen=True)
+class NetworkSection:
+    mode: str = "ap"
+    ap_interface: str = "wlan0"  # onboard radio
+    ap_ssid: str = "towerboard"
+    ap_psk: str = "bellringing"
+    uplink_ssid: str = ""
+    uplink_psk: str = ""
+    join_timeout_s: float = 30.0
+
+
+@dataclass(frozen=True)
+class UpdateSection:
+    # OpenSSH allowed_signers file, baked into the image, never shipped in a release.
+    allowed_signers: str = "/etc/tower/allowed_signers"
+    health_timeout_s: float = 60.0
+    units: list = field(default_factory=lambda: ["tower.service"])
+
+
+@dataclass(frozen=True)
 class Config:
     tower: TowerSection = field(default_factory=TowerSection)
     source: SourceSection = field(default_factory=SourceSection)
     synthetic: SyntheticSection = field(default_factory=SyntheticSection)
     log: LogSection = field(default_factory=LogSection)
+    paths: PathsSection = field(default_factory=PathsSection)
+    web: WebSection = field(default_factory=WebSection)
+    admin: AdminSection = field(default_factory=AdminSection)
+    network: NetworkSection = field(default_factory=NetworkSection)
+    update: UpdateSection = field(default_factory=UpdateSection)
+
+    @property
+    def state_dir(self) -> Path:
+        return Path(self.paths.state_dir)
+
+    @property
+    def opt_dir(self) -> Path:
+        return Path(self.paths.opt_dir)
 
 
 DEFAULTS: dict[str, dict[str, Any]] = {
@@ -145,15 +195,40 @@ def _type_ok(value: Any, expected: type) -> bool:
     return isinstance(value, expected)
 
 
+def save_overrides(section: str, values: Mapping[str, Any], path: Path | None = None) -> None:
+    """Merge ``values`` into the runtime overrides file (layer 3), atomically.
+
+    Validated against the defaults first, so the UI cannot persist a config
+    that would stop the next boot.
+    """
+    if section not in DEFAULTS:
+        raise ConfigError(f"unknown section [{section}]")
+    path = path or Path(os.environ.get("TOWER_OVERRIDES", OVERRIDES_PATH))
+    current = _read_json(path)
+    current.setdefault(section, {}).update(values)
+    candidate = copy.deepcopy(DEFAULTS)
+    _merge(candidate, current, "overrides")
+    _build(candidate)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(current, indent=2) + "\n")
+    os.chmod(tmp, 0o600)  # may hold WiFi passphrases
+    os.replace(tmp, path)
+
+
 def _build(merged: dict[str, dict[str, Any]]) -> Config:
-    cfg = Config(
-        tower=TowerSection(**merged["tower"]),
-        source=SourceSection(**merged["source"]),
-        synthetic=SyntheticSection(**merged["synthetic"]),
-        log=LogSection(**merged["log"]),
-    )
+    sections = {f.name: f.default_factory for f in dataclasses.fields(Config)}
+    cfg = Config(**{name: cls(**merged[name]) for name, cls in sections.items()})
     if cfg.source.kind not in SOURCE_KINDS:
         raise ConfigError(f"source.kind must be one of {SOURCE_KINDS}, got {cfg.source.kind!r}")
     if cfg.log.level.upper() not in LOG_LEVELS:
         raise ConfigError(f"log.level must be one of {LOG_LEVELS}, got {cfg.log.level!r}")
+    if cfg.network.mode not in NETWORK_MODES:
+        raise ConfigError(f"network.mode must be one of {NETWORK_MODES}, got {cfg.network.mode!r}")
+    if not 8 <= len(cfg.network.ap_psk) <= 63:
+        raise ConfigError("network.ap_psk must be 8..63 characters (WPA2)")
+    if not 1 <= len(cfg.network.ap_ssid.encode()) <= 32:
+        raise ConfigError("network.ap_ssid must be 1..32 bytes")
+    if not all(isinstance(u, str) for u in cfg.update.units):
+        raise ConfigError("update.units must be a list of unit names")
     return cfg

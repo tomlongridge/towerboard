@@ -48,3 +48,42 @@ class MainTest(unittest.TestCase):
         r = run_tower("--version")
         self.assertEqual(r.returncode, 0)
         self.assertIn("events v1", r.stdout)
+
+
+class ServeTest(unittest.TestCase):
+    """`python -m tower serve` as a real process: starts, migrates, answers, stops on SIGTERM."""
+
+    def test_serve_starts_and_stops(self):
+        import json
+        import signal
+        import socket
+        import tempfile
+        import time
+        import urllib.request
+
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+        tmp = Path(tempfile.mkdtemp())
+        toml = tmp / "tower.toml"
+        toml.write_text(f'[paths]\nstate_dir = "{tmp / "state"}"\nopt_dir = "{tmp / "opt"}"\n'
+                        f'[web]\nhost = "127.0.0.1"\nport = {port}\n')
+        env = {**os.environ, "TOWER_OVERRIDES": str(tmp / "overrides.json")}
+        proc = subprocess.Popen([sys.executable, "-m", "tower", "serve", "--config", str(toml)],
+                                cwd=ROOT, env=env, stderr=subprocess.PIPE, text=True)
+        try:
+            body = None
+            for _ in range(100):
+                try:
+                    with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=1) as r:
+                        body = json.loads(r.read())
+                    break
+                except OSError:
+                    time.sleep(0.1)
+            self.assertIsNotNone(body, "server never answered")
+            self.assertEqual(body["status"], "ok")
+            self.assertTrue((tmp / "state" / "migrations.json").is_file())
+        finally:
+            proc.send_signal(signal.SIGTERM)
+            _, err = proc.communicate(timeout=10)
+        self.assertEqual(proc.returncode, 0, err)

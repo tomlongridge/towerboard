@@ -1,0 +1,22 @@
+# Application process: web app, admin, network management.
+# Runs whichever release /opt/tower/current points at; tower/__init__.py pins
+# the process to that release's real path at import.
+[Unit]
+Description=Towerboard application
+After=network.target NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=simple
+User=tower
+Group=tower
+WorkingDirectory=/opt/tower/current
+Environment=PYTHONPATH=/opt/tower/current:/opt/tower/current/vendor
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m tower serve
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

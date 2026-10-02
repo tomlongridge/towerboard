@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Towerboard</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="bar">
+    <a href="#/" class="brand" id="tower-name">Towerboard</a>
+    <nav>
+      <a href="#/">Home</a>
+      <a href="#/diagnostics">Diagnostics</a>
+      <a href="#/admin">Admin</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="view-home" class="view">
+      <h1 id="home-title">Towerboard</h1>
+      <p class="lede">Ringing display, simulator and strike analysis arrive in later releases.</p>
+      <div class="join">
+        <figure>
+          <img src="/qr/wifi.svg" alt="QR code to join the tower WiFi" width="220" height="220">
+          <figcaption>1. Join WiFi <strong id="ssid"></strong><br><span class="muted">password <span id="psk"></span></span></figcaption>
+        </figure>
+        <figure>
+          <img src="/qr/app.svg" alt="QR code to open this app" width="220" height="220">
+          <figcaption>2. Open <strong id="app-url"></strong></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="view-diagnostics" class="view" hidden>
+      <h1>Diagnostics</h1>
+      <p class="muted">Read this page out when asking for help. It contains no passwords.</p>
+      <button type="button" id="diag-refresh">Refresh</button>
+      <div id="diag"></div>
+    </section>
+
+    <section id="view-admin" class="view" hidden>
+      <h1>Admin</h1>
+
+      <form id="pin-form" class="card" hidden>
+        <h2 id="pin-title">Log in</h2>
+        <p id="pin-help" class="muted"></p>
+        <label>PIN <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" pattern="[0-9]{4,12}" required></label>
+        <button type="submit" id="pin-submit">Log in</button>
+        <p class="error" id="pin-error" role="alert"></p>
+      </form>
+
+      <div id="admin-panel" hidden>
+        <div class="card">
+          <h2>Software</h2>
+          <dl class="kv">
+            <dt>Running</dt><dd id="rel-running"></dd>
+            <dt>Current</dt><dd id="rel-current"></dd>
+            <dt>Previous</dt><dd id="rel-previous"></dd>
+            <dt>Last update</dt><dd id="rel-last"></dd>
+          </dl>
+          <p class="warn" id="rel-systemd" hidden>systemd is not available on this host, so releases can be staged here but are only applied on the Pi.</p>
+          <form id="upload-form">
+            <label>Release bundle (.tower) <input type="file" id="bundle" accept=".tower" required></label>
+            <button type="submit">Upload and apply</button>
+          </form>
+          <progress id="upload-progress" max="100" value="0" hidden></progress>
+          <p id="upload-result" role="status"></p>
+          <button type="button" id="rollback" class="secondary">Roll back to previous</button>
+        </div>
+
+        <div class="card">
+          <h2>Network</h2>
+          <p id="net-status" class="muted"></p>
+          <form id="net-form">
+            <label>Mode
+              <select id="net-mode">
+                <option value="ap">Access point only</option>
+                <option value="joined">Join tower WiFi (no access point)</option>
+                <option value="dual">Access point + USB dongle joins WiFi</option>
+              </select>
+            </label>
+            <label>Access point name <input id="net-ap-ssid" maxlength="32" required></label>
+            <label>Access point password <input id="net-ap-psk" minlength="8" maxlength="63" required></label>
+            <label>Tower WiFi name <input id="net-up-ssid" maxlength="32"></label>
+            <label>Tower WiFi password <input id="net-up-psk" type="password" placeholder="unchanged"></label>
+            <button type="submit">Save and apply</button>
+          </form>
+          <p id="net-result" role="status"></p>
+        </div>
+
+        <div class="card">
+          <h2>Change PIN</h2>
+          <form id="change-pin-form">
+            <label>New PIN <input id="new-pin" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{4,12}" required></label>
+            <button type="submit">Change PIN</button>
+          </form>
+          <p id="change-pin-result" role="status"></p>
+        </div>
+
+        <button type="button" id="logout" class="secondary">Log out</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bar foot">
+    <span>WiFi <strong id="foot-ssid"></strong> · <span id="foot-url"></span></span>
+    <span id="foot-version" class="muted"></span>
+  </footer>
+</body>
+</html>

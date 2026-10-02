@@ -483,6 +483,8 @@ The USB WiFi dongle is optional in every mode. Absence degrades capability, neve
 
 **Dependency posture.** Stdlib-only where it is possible without contortion. Current accepted exceptions: `pyserial`, `segno`, and one audio binding. Each exception needs a reason recorded here.
 
+- `segno` (M1): QR codes for the AP join and app URL. Pure Python, vendored into releases.
+
 **Licensing.** `pibells` is GPL and is being reimplemented rather than forked, deliberately. Do not paste from it.
 
 **Observability.** Structured log lines to journald. An admin diagnostics page showing: source status and dropped-byte count, audio underruns and voice steals, SSE client count and drop counts, last update result, disk free, and clock-discipline offset. This is the page someone reads down a phone line to a tower 200 miles away.
@@ -558,3 +560,16 @@ Flagging these so they can be overruled rather than silently inherited:
 - The simulator tracking the band's fitted pace from the live analyser output, which creates a dependency from C9 on C7 that wasn't previously drawn.
 - The event envelope renamed transport-agnostic, reconciling the old "WebSocket envelope" name with the SSE decision.
 - M0 split out of M1, because "update first" otherwise hides a fortnight of foundations.
+
+### Calls made while implementing M1
+
+- **Signatures use OpenSSH (`ssh-keygen -Y sign/verify`)**, namespace `tower-release`, verified against `/etc/tower/allowed_signers`. The stdlib has no Ed25519, and `ssh-keygen` ships on both the Mac and the Pi, so this adds no dependency.
+- **Production runs the system `python3` with vendored pure-Python dependencies, not an on-Pi venv.** This overrides "venv built on-Pi" in §3: an offline tower cannot `uv sync`, so a release must carry its dependencies. The venv remains the Mac dev environment. A C-extension audio binding (M2) will have to come from Debian packages (`python3-alsaaudio`), not the bundle.
+- **A bundle is one file** (`.tower`: a tar of `payload.tar.gz` plus its signature), so a phone carries a single upload. Every file is listed with its SHA-256 in `RELEASE.json` and checked after unpacking.
+- **Activation runs in a separate oneshot unit, `tower-update.service`.** The app verifies and stages, then hands over; it cannot restart itself and judge its own health. The updater runs from the release that was current when it started, so a broken release cannot break its own rollback. Migrations run from the new release.
+- **The process pins itself to its release's real path at import**, so a lazy import after the `current` symlink moves can never load another release's code.
+- **The app runs as an unprivileged `tower` user.** A polkit rule grants exactly: start/restart of `tower.service` and `tower-update.service`, and NetworkManager. `/opt/tower` is owned by `tower`, so staging and the symlink swap need no root.
+- **No shipped default PIN; the first visitor to the admin page sets it**, matching the README. Forgotten PIN: delete `/var/lib/tower/admin.json` from the SD card. Failed logins lock out for a minute after five tries.
+- **Diagnostics are public (no PIN).** The person reading them down a phone line may not have the PIN; they contain no secrets.
+- **CSRF protection is a required `X-Tower-Request` header on every POST**, plus `SameSite=Strict` session cookies. No tokens to manage.
+- **A failed join always falls back to the AP.** A mistyped tower WiFi passphrase in `joined` mode must not lock everyone out. On startup the app only reapplies the network mode if it is not already in effect, so updates do not drop ringers off the AP.

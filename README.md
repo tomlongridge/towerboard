@@ -227,28 +227,85 @@ For each touch, the following is recorded:
 
 The consolidated design and milestone plan is in [tower-system-design.md](tower-system-design.md).
 
-Python is pinned to the Pi's shipped interpreter in `.python-version` (Bookworm: 3.11). The code is stdlib-only, so any Python ≥ 3.11 works for a quick run; `uv` gives the pinned one:
+Python is pinned to the Pi's shipped interpreter in `.python-version` (Bookworm: 3.11). Use `uv` so the Mac runs the same version:
+
+```bash
+uv sync
+```
+
+### Running locally
+
+The web app and admin, from `./.dev` on port 8080 (no `/etc` or `/var` needed):
+
+```bash
+uv run python -m tower serve --dev
+```
+
+Open http://localhost:8080/ (`?display=wall` for the belfry display, `#/admin` for admin, `#/diagnostics`). The first visit to admin sets the PIN; delete `.dev/state/admin.json` to start again. systemd and NetworkManager don't exist on the Mac, and the app says so rather than faking them: uploads are verified and staged but only activated on the Pi.
+
+The synthetic pulse pipeline, envelopes to stdout as JSON lines:
 
 ```bash
 uv run python -m tower --source=synthetic
 ```
 
-`--fast` swaps in a fake clock: no real-time pacing and byte-identical output for a given `--seed`, on any machine. Envelopes go to stdout as JSON lines, logs to stderr.
+`--fast` swaps in a fake clock: no real-time pacing and byte-identical output for a given `--seed`.
+
+Tests:
 
 ```bash
 uv run python -m unittest discover -s tests -v
 ```
 
-Config layers, later wins: shipped defaults → `/etc/tower/tower.toml` (`$TOWER_CONFIG`) → `/var/lib/tower/overrides.json` (`$TOWER_OVERRIDES`) → command-line flags. Missing files are fine. Example `tower.toml`:
+### Config
+
+Layers, later wins: shipped defaults → `/etc/tower/tower.toml` (`$TOWER_CONFIG`) → `/var/lib/tower/overrides.json` (`$TOWER_OVERRIDES`, written by the admin page) → command-line flags. Missing files are fine. Example `tower.toml`:
 
 ```toml
 [tower]
 name = "St Mary"
 
-[synthetic]
-bells = 8
-gap_ms = 200
-error_ms = 10
+[network]
+mode = "ap"            # ap | joined | dual
+ap_ssid = "St Mary bells"
+ap_psk = "ringing-is-fun"
 ```
 
-On the Pi, the venv is built there with `uv sync`; it is never copied across (see `.rsync-exclude`).
+### Releases
+
+Releases are signed with an OpenSSH key and verified on the Pi against `/etc/tower/allowed_signers`. Create a signing key once:
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/tower-release -C tower-release
+```
+
+Its `allowed_signers` line is `tower-release ` followed by the contents of `~/.ssh/tower-release.pub`. Build a bundle (`dist/tower-<version>.tower`; one file, so a phone can carry it):
+
+```bash
+uv run python -m tower.release build --key ~/.ssh/tower-release
+```
+
+The bundle vendors its pure-Python dependencies, so the Pi runs it with the system `python3` and never needs network access or pip.
+
+**First install** on a fresh Raspberry Pi OS (Bookworm), as root, with the bundle and the `allowed_signers` file copied over:
+
+```bash
+sudo sh install.sh tower-0.2.0+g1a2b3c4.tower allowed_signers
+```
+
+(`install.sh` is in `deploy/` in this repo and in every bundle.) It refuses to run if the Pi is on WiFi and no `[network]` config exists, because the default `ap` mode would take over `wlan0` and drop your session.
+
+**Every later update** goes through the update pipeline: upload the bundle on the admin page, or from the Mac:
+
+```bash
+scripts/deploy-dev.sh towerboard.local
+```
+
+This builds, copies and installs through the same verify → stage → swap → health check → auto-rollback path a tower uses, never by rsyncing over a live tree. Layout on the Pi:
+
+```
+/opt/tower/releases/<version>/   unpacked releases
+/opt/tower/current, previous     symlinks
+/var/lib/tower/                  state (never inside a release)
+/etc/tower/                      tower.toml, allowed_signers
+```

@@ -1,0 +1,15 @@
+# Started by the app (systemctl start --no-block) after it has verified and
+# staged a release. Swaps the symlink, restarts tower.service, health-checks
+# it and rolls back on failure. Runs from the release that was current when
+# it started, so a broken new release cannot break its own rollback.
+[Unit]
+Description=Towerboard update: activate, health-check, roll back on failure
+
+[Service]
+Type=oneshot
+User=tower
+Group=tower
+WorkingDirectory=/opt/tower/current
+Environment=PYTHONPATH=/opt/tower/current:/opt/tower/current/vendor
+ExecStart=/usr/bin/python3 -m tower.release run-request
+TimeoutStartSec=600
