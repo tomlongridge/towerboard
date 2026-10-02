@@ -1,0 +1,24 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Native arm64 matches the Pi; macOS proves the Mac dev loop. Both must
+        # produce the same golden synthetic output (tests/test_main.py).
+        os: [ubuntu-24.04-arm, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install pinned Python (.python-version)
+        run: uv python install
+      - name: Unit and end-to-end tests
+        run: uv run python -m unittest discover -s tests -v
+      - name: Synthetic smoke run
+        run: uv run python -m tower --source=synthetic --fast --rows 100 > /dev/null

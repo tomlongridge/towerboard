@@ -1,0 +1,6 @@
+# The venv is built on the Pi with `uv sync`, never copied from the Mac.
+.venv/
+.git/
+__pycache__/
+*.pyc
+.DS_Store
