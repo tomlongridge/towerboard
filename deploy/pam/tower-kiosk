@@ -1,0 +1,6 @@
+# Gives the kiosk service a proper logind session, so cage may use the
+# display and input devices without running as root.
+auth     required pam_unix.so nullok
+account  required pam_unix.so
+session  required pam_unix.so
+session  required pam_systemd.so

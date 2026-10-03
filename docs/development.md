@@ -64,7 +64,7 @@ ap_psk = "ringing-is-fun"
 
 ## Sound and calibration
 
-Sound packs are zips holding `manifest.toml` and one WAV per bell (format in [tower/rt/soundpack.py](tower/rt/soundpack.py)), uploaded on the admin page. Until one is installed, the Pi sounds synthetic bells generated in code.
+Sound packs are zips holding `manifest.toml` and one WAV per bell (format in [tower/rt/soundpack.py](../tower/rt/soundpack.py)), uploaded on the admin page. Until one is installed, the Pi sounds synthetic bells generated in code.
 
 To calibrate, ring open with the bells sounding and use the admin page's calibration table to nudge each bell's handstroke and backstroke in 5 ms steps until the sound lands with the real bell. Offsets are stored per tower in `/var/lib/tower/calibration.json`, never in the sound pack.
 
@@ -103,6 +103,8 @@ sudo sh install.sh tower-0.2.0+g1a2b3c4.tower allowed_signers
 ```
 
 (`install.sh` is in `deploy/` in this repo and in every bundle.) It also installs the Debian packages for the C extensions (`python3-numpy`, `python3-alsaaudio`), the systemd units, the udev rule that sets the USB serial latency timer to 1 ms, and the polkit rule.
+
+It also sets up the belfry display: `tower-kiosk.service` runs Chromium full screen under `cage` (a compositor that shows one app, no desktop) as an unprivileged `tower-kiosk` user, on the Pi's own monitor, at `http://localhost/?display=wall`. It waits for the app to answer before starting, and the page reloads itself when it sees a new version after an update. `TOWER_KIOSK=0` skips it for a Pi with no monitor. The image is Raspberry Pi OS **Lite**: a desktop session would bring PipeWire, which can hold the sound card the RT process drives directly.
 
 **Upgrading from 0.2 (M1) to 0.3 (M2)** needs `install.sh` run once more, because M2 adds system pieces an update cannot install (the `tower-rt.service` unit, Debian packages, udev and polkit rules). Uploading 0.3 to an M1 install through the admin page rolls back automatically, because the health check can't find `tower-rt.service`. It refuses to run if the Pi is on WiFi and no `[network]` config exists, because the default `ap` mode would take over `wlan0` and drop your session.
 

@@ -318,12 +318,20 @@ setInterval(() => {
   if (lastStrikeAt && Date.now() - lastStrikeAt > IDLE_AFTER_MS) showRinging(false);
 }, 1000);
 
+let pageVersion = null;
+
 function connectEvents() {
   const es = new EventSource("/api/events");
   es.onmessage = (msg) => {
     let env;
     try { env = JSON.parse(msg.data); } catch (_) { return; }
     if (env.type === "system" || env.type === "state") noteServerTime(env.t);
+    // Each (re)connect starts with a state snapshot. A new version means an update was
+    // applied while this page was open: reload so the wall display runs the new code.
+    if (env.type === "state" && env.payload.version) {
+      if (pageVersion && env.payload.version !== pageVersion) location.reload();
+      pageVersion = env.payload.version;
+    }
     if (env.type === "strike") onStrike(env.payload, env.t);
     if (env.type === "state" && env.payload.strokes_reset) {
       for (const el of bellEls.values()) el.classList.remove("hand", "back");

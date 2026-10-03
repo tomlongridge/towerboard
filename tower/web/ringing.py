@@ -15,7 +15,7 @@ import time
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Callable
 
-from tower import config
+from tower import config, version
 from tower.rt import soundpack
 from tower.rt.calibration import Calibration
 from tower.web.events import stream
@@ -55,6 +55,9 @@ class RingingApi:
     def snapshot(self) -> dict:
         rt = self.app.bus.rt_status if self.app.bus.rt_fresh() else None
         return {
+            # A page that sees this change after a reconnect reloads itself: the
+            # wall display is never touched by hand, so an update must reach it.
+            "version": version.full_version(),
             "rt_reporting": rt is not None,
             "pack": rt["pack"] if rt else None,
             "source": (rt or {}).get("source", {}).get("status"),

@@ -3,13 +3,13 @@ name = "towerboard"
 version = "0.1.0"
 description = "Tower information board, bell simulator and strike analyser for a Raspberry Pi"
 readme = "README.md"
-# Pinned to the Pi's shipped interpreter (Raspberry Pi OS Bookworm: 3.11); see .python-version.
-requires-python = ">=3.11"
+# Pinned to the Pi's shipped interpreter (Raspberry Pi OS Trixie: 3.13); see .python-version.
+requires-python = ">=3.13"
 # Stdlib-only by default. Accepted exceptions are recorded in tower-system-design.md §3.
 # Releases vendor the pure-Python ones so an offline tower never needs pip;
 # C extensions come from Debian packages installed with the image.
 dependencies = [
-    "numpy>=1.24,<1.25",  # C extension: from Debian (python3-numpy) on the Pi, never vendored
+    "numpy>=2.2,<2.3",  # C extension: from Debian (python3-numpy) on the Pi, never vendored
     "pyserial>=3.5",
     "segno>=1.6.6",
 ]

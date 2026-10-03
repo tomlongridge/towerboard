@@ -109,6 +109,7 @@ class RingingApiTest(WebTestCase):
         self.assertEqual(resp.readline(), b"retry: 2000\n")
         first = json.loads(resp.readline().decode()[6:])
         self.assertEqual(first["type"], "state")
+        self.assertTrue(first["payload"]["version"])  # pages reload when this changes
         resp.readline()
         self.app.bus.on_rt({"schema_version": 1, "type": "strike", "seq": 5, "t": 1.0,
                             "payload": {"bell": 3, "stroke": "hand", "source": "live"}})

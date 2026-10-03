@@ -595,3 +595,11 @@ Flagging these so they can be overruled rather than silently inherited:
 ### Target OS: Raspberry Pi OS Trixie
 
 The target moved from Bookworm to Trixie (Debian 13): Python 3.13 and numpy 2.2 from Debian. `.python-version` and the numpy pin follow, so development and CI test what the Pi runs.
+
+### The belfry display (C11 kiosk)
+
+- **Raspberry Pi OS Lite plus `cage` and Chromium, not the desktop image.** `cage` is a Wayland compositor that shows exactly one full-screen app. A desktop session adds PipeWire, which can hold the ALSA device the RT process drives directly, plus screen blanking, pop-ups and a login screen to manage, and more CPU load beside the strike timing.
+- **`tower-kiosk.service` runs as its own unprivileged user**, never as `tower`, so the browser has none of the app's NetworkManager, systemd or `/opt/tower` rights. A PAM entry gives it a logind session for the display and input devices.
+- **It waits for `/api/health` to answer before starting**, so the screen never shows a connection error at boot.
+- **Pages reload when the app version changes.** The state snapshot on every SSE (re)connect carries the version; a page that sees a new one after an update reloads, so the unattended wall display never runs stale code.
+- **Not yet handled:** display rotation and resolution, hiding the mouse pointer if a mouse is plugged in, and turning the monitor off out of hours.

@@ -45,6 +45,8 @@ class BundleTest(unittest.TestCase):
         self.assertIn("tower/web/static/index.html", files)
         self.assertIn("vendor/segno/__init__.py", files)
         self.assertIn("deploy/systemd/tower.service", files)
+        self.assertIn("deploy/systemd/tower-kiosk.service", files)
+        self.assertIn("deploy/pam/tower-kiosk", files)
         self.assertFalse(any("__pycache__" in f or "/." in f for f in files))
 
     def test_git_version(self):

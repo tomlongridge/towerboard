@@ -213,7 +213,7 @@ def extract(payload: Path, dest: Path, manifest: dict) -> None:
     """Unpack ``release/`` into ``dest`` and check it against the manifest.
 
     Members are checked by hand rather than trusting ``tarfile`` filters,
-    which Bookworm's 3.11 may predate: regular files and directories only,
+    whose defaults have changed across Python versions: regular files and directories only,
     relative paths under ``release/`` only.
     """
     expected: dict[str, str] = manifest["files"]

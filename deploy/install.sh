@@ -1,7 +1,9 @@
 #!/bin/sh
-# First install on a fresh Raspberry Pi OS (Bookworm) image. Run as root:
+# First install on a fresh Raspberry Pi OS (Trixie) image. Run as root:
 #
 #   sudo sh install.sh tower-<version>.tower allowed_signers
+#
+# Set TOWER_KIOSK=0 to skip the belfry display (a Pi with no monitor).
 #
 # Every later update goes through the update pipeline (admin page upload, or
 # `python3 -m tower.release install`), never through this script.
@@ -18,6 +20,11 @@ command -v nmcli >/dev/null || { echo "NetworkManager (nmcli) is required" >&2; 
 
 # C extensions come from Debian, never from the bundle (design §3, §6).
 apt-get install -y --no-install-recommends python3-numpy python3-alsaaudio
+KIOSK=${TOWER_KIOSK:-1}
+if [ "$KIOSK" = 1 ]; then
+  # The belfry display: a one-app compositor and a browser, no desktop.
+  apt-get install -y --no-install-recommends cage chromium curl
+fi
 
 # The default network mode turns wlan0 into the ringers' access point as soon
 # as the app starts. If this session arrived over that WiFi, it would drop.
@@ -72,7 +79,18 @@ install -m 644 "$OPT/current/deploy/udev/99-tower-serial.rules" /etc/udev/rules.
 install -m 644 "$OPT/current/deploy/tmpfiles/tower.conf" /etc/tmpfiles.d/
 systemd-tmpfiles --create /etc/tmpfiles.d/tower.conf
 udevadm control --reload && udevadm trigger --subsystem-match=usb-serial
+if [ "$KIOSK" = 1 ]; then
+  # Its own unprivileged user: the browser gets none of the app's rights.
+  id tower-kiosk >/dev/null 2>&1 || useradd --system --create-home --home-dir /var/lib/tower-kiosk \
+    --shell /usr/sbin/nologin tower-kiosk
+  usermod -aG video,render,input tower-kiosk
+  install -m 644 "$OPT/current/deploy/pam/tower-kiosk" /etc/pam.d/tower-kiosk
+  install -m 644 "$OPT/current/deploy/systemd/tower-kiosk.service" /etc/systemd/system/
+fi
 systemctl daemon-reload
 systemctl enable --now tower-rt.service tower.service
+if [ "$KIOSK" = 1 ]; then
+  systemctl enable --now tower-kiosk.service
+fi
 
 echo "Installed $VERSION. Open http://<pi-address>/#/admin to set the admin PIN."

@@ -201,7 +201,7 @@ Local persistence on the Pi is provided by a local Postgres database.
 
 ### Sound and calibration
 
-Sound packs are zips holding `manifest.toml` and one WAV per bell (format in [tower/rt/soundpack.py](tower/rt/soundpack.py)), uploaded on the admin page. Until one is installed, the Pi sounds synthetic bells generated in code.
+Sound packs are zips holding `manifest.toml` and one WAV per bell (format in [tower/rt/soundpack.py](../tower/rt/soundpack.py)), uploaded on the admin page. Until one is installed, the Pi sounds synthetic bells generated in code.
 
 ### Releases
 
