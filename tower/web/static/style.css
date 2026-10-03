@@ -153,6 +153,15 @@ fieldset.known-nets legend { padding: 0 4px; }
 label.inline input { width: 5em; display: inline-block; margin: 0; }
 input[type="range"] { padding: 0; }
 
+h3 { font-size: 1rem; margin: 16px 0 6px; }
+.update-offer { border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; margin: 0 0 12px; }
+.update-offer pre { white-space: pre-wrap; font: inherit; font-size: 0.9rem; max-height: 14em; overflow: auto; }
+details.manual-upload { margin: 14px 0 8px; }
+details.manual-upload summary { cursor: pointer; color: var(--accent); }
+.update-mode { border: 2px solid var(--accent); border-radius: 12px; padding: 16px; margin: 0 0 16px; }
+body.wall .update-mode h2 { font-size: 2.6rem; }
+body.wall .update-mode p { font-size: 1.5rem; }
+
 /* Wall display: ?display=wall. Large, no navigation. */
 body.wall nav, body.wall .bar.foot .muted { display: none; }
 body.wall main { max-width: none; }

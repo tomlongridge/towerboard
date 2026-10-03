@@ -56,20 +56,18 @@ if [ "$KIOSK" = 1 ]; then
   apt-get install -y --no-install-recommends cage chromium curl
 fi
 
-# The default network mode turns wlan0 into the ringers' access point as soon
-# as the app starts. If this session arrived over that WiFi, it would drop.
+# The Pi's WiFi radio always becomes the ringers' access point (design C16).
+# If this session arrived over that WiFi, it would drop as the app starts.
 if nmcli -t -f DEVICE,STATE device | grep -q '^wlan0:connected' \
-   && ! grep -qs '^\[network\]' "$ETC/tower.toml" \
+   && ! nmcli -t -f TYPE,STATE device | grep -q '^ethernet:connected' \
    && [ "${TOWER_ALLOW_AP_TAKEOVER:-0}" != 1 ]; then
   cat >&2 <<MSG
-wlan0 is connected to a WiFi network, and the default network mode will turn it
-into an access point, dropping any session that came in over it. Either:
-  - configure the network first in $ETC/tower.toml, e.g. to stay on this WiFi:
-      [network]
-      mode = "joined"
-      uplink_ssid = "..."
-      uplink_psk = "..."
-  - or accept the takeover: TOWER_ALLOW_AP_TAKEOVER=1 sh install.sh ...
+This Pi is on WiFi with no network cable. Towerboard turns its WiFi into the
+ringers' access point, so this session will drop as it starts. Either:
+  - plug in a network cable and log in over that instead (recommended), or
+  - accept it: TOWER_ALLOW_AP_TAKEOVER=1 sh install.sh ...
+    then join the Pi's WiFi ("towerboard", password "bellringing") and use
+    ssh <user>@10.42.0.1 or http://10.42.0.1/ to carry on.
 MSG
   exit 1
 fi

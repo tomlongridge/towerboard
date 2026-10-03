@@ -21,7 +21,7 @@ from typing import Callable
 
 from tower import config, ipc, version
 from tower.clock import Clock
-from tower.net import AP_ADDRESS, NetworkManager, Watchdog
+from tower.net import AP_ADDRESS, NetworkManager, Supervisor
 from tower.release import ReleaseError, ReleaseManager, host
 from tower.web import qr
 from tower.wallclock import WallClock
@@ -70,7 +70,7 @@ class TowerApp:
         self.handoff = handoff or systemd_handoff(cfg.state_dir)
         self._net_lock = threading.Lock()
         self._net_result: dict | None = None
-        self.watchdog = Watchdog(self.net, clock.now())
+        self.supervisor = Supervisor(self.net)
         self._update_lock = threading.Lock()
         self.bus = EventBus(clock)
         self.control = ipc.Sender(cfg.run_dir / ipc.CONTROL)  # app → RT, never blocks
@@ -79,6 +79,9 @@ class TowerApp:
         from tower.web.ringing import RingingApi
 
         self.ringing = RingingApi(self)
+        from tower.updates import UpdateService
+
+        self.updates = UpdateService(self)
 
     def close(self) -> None:
         self.stop.set()
@@ -101,6 +104,9 @@ class TowerApp:
             ("GET", "/api/admin/releases"): admin(self.release_status),
             ("POST", "/api/admin/update"): admin(self.upload_update),
             ("POST", "/api/admin/rollback"): admin(self.rollback),
+            ("GET", "/api/admin/updates"): admin(self.update_status),
+            ("POST", "/api/admin/updates/check"): admin(self.check_for_updates),
+            ("POST", "/api/admin/updates/apply"): admin(self.apply_update),
             ("GET", "/api/admin/network"): admin(self.network_status),
             ("POST", "/api/admin/network"): admin(self.set_network),
             **self.ringing.routes(admin),
@@ -189,6 +195,7 @@ class TowerApp:
             "wall_clock": self.wallclock.status(),
             "update": {**self.releases.status(), "systemd": host.systemd_available()},
             "network": {**net, "last_apply": self._net_result},
+            "updates": self.updates.status(),
             "disk": disk,
             "rt": {"reporting": rt is not None, "last_report_s_ago": age,
                    "bad_envelopes": self.bus.rt_bad, "control_dropped": self.control.dropped},
@@ -287,30 +294,27 @@ class TowerApp:
     # --- admin: network ------------------------------------------------------
 
     def network_status(self, req: Request) -> Response:
-        status = self.net.status()
-        fallback = self.watchdog.fell_back
         return json_response({
-            **status,
+            **self.net.status(),
             # Settings come from config, not from NetworkManager, so the form can
             # always be filled in, even when nmcli can't be read.
-            "mode": self.cfg.network.mode,
             "ap_ssid": self.cfg.network.ap_ssid,
             "ap_share_internet": self.cfg.network.ap_share_internet,
             "last_apply": self._net_result,
             # Passwords never leave the Pi; the page only learns whether one is set.
             "known_networks": [{"ssid": ssid, "password_set": bool(psk)}
                                for ssid, psk in self.cfg.network.uplink_networks()],
-            "fallback": fallback.as_dict() if fallback else None,
+            "checking_for_updates": self.supervisor.paused,
         })
 
     def set_network(self, req: Request) -> Response:
-        """Persist the mode, then apply it in the background.
+        """Persist the settings, then apply them in the background.
 
-        The response must go out first: applying may take down the very AP
-        this request arrived on.
+        The response must go out first: applying may restart the very AP this
+        request arrived on (a new name or password).
         """
         body = req.json()
-        allowed = {"mode", "ap_ssid", "ap_psk", "ap_share_internet", "uplinks"}
+        allowed = {"ap_ssid", "ap_psk", "ap_share_internet", "uplinks"}
         values = {k: v for k, v in body.items() if k in allowed}
         if not values:
             raise HttpError(HTTPStatus.BAD_REQUEST, f"expected some of {sorted(allowed)}")
@@ -325,6 +329,9 @@ class TowerApp:
         if not self.net.available():
             return json_response({"saved": True, "applied": False,
                                   "detail": "saved; nmcli is not available on this host"})
+        if self.supervisor.paused:
+            return json_response({"saved": True, "applied": False,
+                                  "detail": "saved; applies when the update check finishes"})
         threading.Thread(target=self.apply_network, name="net-apply", daemon=True).start()
         return json_response({"saved": True, "applied": "in progress"}, HTTPStatus.ACCEPTED)
 
@@ -349,29 +356,46 @@ class TowerApp:
         return {"uplinks": uplinks, "uplink_ssid": "", "uplink_psk": ""}
 
     def apply_network(self) -> None:
+        # Let the response reach the phone before the AP restarts.
+        self.clock.sleep_until(self.clock.now() + 1.0)
         with self._net_lock:
-            # Let the response reach the phone before the AP drops.
-            self.clock.sleep_until(self.clock.now() + 1.0)
             try:
-                result = self.net.apply()
-                self._net_result = result.as_dict()
-                self.watchdog.reset(self.clock.now())
-                if self.cfg.network.mode == "joined" and result.effective == "ap":
-                    self.watchdog.fell_back = result  # already on the AP until reboot
+                self._net_result = self.net.apply().as_dict()
             except Exception as e:  # noqa: BLE001
                 log.exception("network apply failed")
                 self._net_result = {"ok": False, "detail": str(e)}
 
-    def run_watchdog(self, stop: threading.Event, interval_s: float = 10.0) -> None:
-        """Single radio: fall back to the AP until reboot when no known network is reachable."""
-        while not stop.wait(interval_s):
-            if not self._net_lock.acquire(blocking=False):
-                continue  # a deliberate change is being applied
-            try:
-                result = self.watchdog.check(self.clock.now())
-                if result:
-                    self._net_result = result.as_dict()
-            except Exception:  # noqa: BLE001 — never let the watchdog die
-                log.exception("network watchdog failed")
-            finally:
-                self._net_lock.release()
+    def run_supervisor(self, stop: threading.Event, interval_s: float = 10.0) -> None:
+        """Keep the radios in line with the hardware: cable or dongle in or out, AP down."""
+        while True:
+            if self._net_lock.acquire(blocking=False):  # else a deliberate change is being applied
+                try:
+                    result = self.supervisor.check()
+                    if result:
+                        self._net_result = result.as_dict()
+                except Exception:  # noqa: BLE001 — never let the supervisor die
+                    log.exception("network supervisor failed")
+                finally:
+                    self._net_lock.release()
+            if stop.wait(interval_s):
+                return
+
+    # --- admin: updates from GitHub ------------------------------------------------
+
+    def update_status(self, req: Request) -> Response:
+        return json_response(self.updates.status())
+
+    def check_for_updates(self, req: Request) -> Response:
+        return json_response({"detail": self.updates.request_check(), **self.updates.status()},
+                             HTTPStatus.ACCEPTED)
+
+    def apply_update(self, req: Request) -> Response:
+        from tower.release.github import UpdateError
+
+        try:
+            status = self.updates.apply()
+        except UpdateError as e:
+            raise HttpError(HTTPStatus.CONFLICT, str(e)) from None
+        except Exception as e:  # noqa: BLE001
+            raise HttpError(HTTPStatus.INTERNAL_SERVER_ERROR, f"could not start the update: {e}") from None
+        return json_response({"activation": status}, HTTPStatus.ACCEPTED)

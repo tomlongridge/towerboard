@@ -63,16 +63,22 @@ class ConfigTest(unittest.TestCase):
             self.load()
 
     def test_save_overrides_merges_and_validates(self):
-        config.save_overrides("network", {"mode": "dual"}, self.overrides)
+        config.save_overrides("network", {"ap_ssid": "St Mary"}, self.overrides)
         config.save_overrides("network", {"uplink_ssid": "Church"}, self.overrides)
         cfg = self.load()
-        self.assertEqual((cfg.network.mode, cfg.network.uplink_ssid), ("dual", "Church"))
+        self.assertEqual((cfg.network.ap_ssid, cfg.network.uplink_ssid), ("St Mary", "Church"))
         self.assertEqual(self.overrides.stat().st_mode & 0o777, 0o600)
-        for section, values in (("network", {"mode": "mesh"}), ("network", {"ap_psk": "short"}),
+        for section, values in (("update", {"channel": "nightly"}), ("network", {"ap_psk": "short"}),
                                 ("nope", {"x": 1}), ("web", {"port": "eighty"})):
             with self.subTest(values=values), self.assertRaises(config.ConfigError):
                 config.save_overrides(section, values, self.overrides)
-        self.assertEqual(self.load().network.mode, "dual")  # rejected writes changed nothing
+        self.assertEqual(self.load().network.ap_ssid, "St Mary")  # rejected writes changed nothing
+
+    def test_old_network_mode_setting_is_ignored(self):
+        """Saved by older releases; there are no modes now (design C16)."""
+        self.overrides.write_text('{"network": {"mode": "joined", "ap_ssid": "St Mary"}}')
+        with self.assertLogs("tower.config", "WARNING"):
+            self.assertEqual(self.load().network.ap_ssid, "St Mary")
 
     def test_list_values(self):
         self.tower.write_text('[update]\nunits = ["tower.service", "tower-rt.service"]\n')
@@ -87,7 +93,7 @@ class ConfigTest(unittest.TestCase):
         self.overrides.write_text("")
         with self.assertLogs("tower.config", "ERROR"):
             cfg = self.load()
-        self.assertEqual((cfg.tower.name, cfg.network.mode), ("St Mary", "ap"))
+        self.assertEqual((cfg.tower.name, cfg.network.uplinks), ("St Mary", []))
         self.assertFalse(self.overrides.exists())
         self.assertTrue(self.overrides.with_name("overrides.json.damaged").exists())
         config.save_overrides("audio", {"volume_db": -3.0}, self.overrides)  # and saving works again

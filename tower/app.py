@@ -101,17 +101,14 @@ def _start_event_threads(app: TowerApp) -> None:
 
 
 def _ensure_network(app: TowerApp) -> None:
-    """Bring up the configured mode on first boot; leave it alone if already in effect.
+    """Bring the radios into line with the hardware, keep them there, and check for updates.
 
-    Re-applying on every start would drop ringers off the AP at each update.
+    The supervisor leaves a working AP alone: restarting it would drop every
+    phone on it at each update.
     """
+    threading.Thread(target=app.updates.run, args=(app.stop,), name="updates", daemon=True).start()
     if not app.net.available():
         log.info("nmcli not available; network management disabled on this host")
         return
-    threading.Thread(target=app.run_watchdog, args=(app.stop,), name="net-watchdog", daemon=True).start()
-    try:
-        if app.net.in_effect():
-            return
-    except RuntimeError as e:
-        log.warning("could not read network state: %s", e)
-    threading.Thread(target=app.apply_network, name="net-apply", daemon=True).start()
+    threading.Thread(target=app.run_supervisor, args=(app.stop,), kwargs={"interval_s": 10.0},
+                     name="net-supervisor", daemon=True).start()

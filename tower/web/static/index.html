@@ -19,6 +19,11 @@
 
   <main>
     <section id="view-home" class="view">
+      <div id="update-mode" class="update-mode" hidden role="status">
+        <h2>Checking for updates</h2>
+        <p id="update-mode-message"></p>
+        <p id="update-mode-stuck" class="muted"></p>
+      </div>
       <div id="ringing" hidden>
         <div class="bells" id="bells" aria-live="off"></div>
         <p class="muted ringing-foot"><span class="swatch hand"></span> handstroke
@@ -69,11 +74,28 @@
             <dt>Last update</dt><dd id="rel-last"></dd>
           </dl>
           <p class="warn" id="rel-systemd" hidden>systemd is not available on this host, so releases can be staged here but are only applied on the Pi.</p>
-          <form id="upload-form">
-            <label>Release bundle (.tower) <input type="file" id="bundle" accept=".tower" required></label>
-            <button type="submit">Upload and apply</button>
-          </form>
-          <progress id="upload-progress" max="100" value="0" hidden></progress>
+
+          <h3>Updates</h3>
+          <p id="upd-how" class="muted"></p>
+          <p id="upd-status" role="status"></p>
+          <progress id="upd-progress" max="100" value="0" hidden></progress>
+          <div id="upd-available" class="update-offer" hidden>
+            <p><strong>Version <span id="upd-version"></span> is ready to install.</strong> <span id="upd-published" class="muted"></span></p>
+            <details><summary>What's new</summary><pre id="upd-notes"></pre></details>
+            <button type="button" id="upd-apply">Apply update</button>
+          </div>
+          <button type="button" id="upd-check" class="secondary">Check for updates</button>
+          <p id="upd-result" role="status"></p>
+
+          <details class="manual-upload">
+            <summary>Install from a file instead</summary>
+            <p class="muted">For a Pi that never goes online, or for development: a <code>.tower</code> release file.</p>
+            <form id="upload-form">
+              <label>Release file (.tower) <input type="file" id="bundle" accept=".tower" required></label>
+              <button type="submit">Upload and apply</button>
+            </form>
+            <progress id="upload-progress" max="100" value="0" hidden></progress>
+          </details>
           <p id="upload-result" role="status"></p>
           <button type="button" id="rollback" class="secondary">Roll back to previous</button>
         </div>
@@ -82,13 +104,6 @@
           <h2>Network</h2>
           <p id="net-status" class="muted"></p>
           <form id="net-form">
-            <label>Mode
-              <select id="net-mode">
-                <option value="ap">Access point only</option>
-                <option value="joined">Join tower WiFi (no access point)</option>
-                <option value="dual">Access point + USB dongle joins WiFi</option>
-              </select>
-            </label>
             <label>Access point name <input id="net-ap-ssid" maxlength="32" required></label>
             <label>Access point password <input id="net-ap-psk" minlength="8" maxlength="63" required></label>
             <label class="check"><input type="checkbox" id="net-share">
@@ -96,7 +111,7 @@
             <p class="muted small-print">Off: the access point only reaches Towerboard, and phones keep using their own mobile data for everything else.</p>
             <fieldset class="known-nets">
               <legend>Known WiFi networks</legend>
-              <p class="muted">Networks the Pi may join, first choice at the top. With no USB dongle, if none is in range or the connection is lost, the Pi runs its own access point until it restarts. If a network cable is plugged in, the Pi uses the cable for the internet and runs its access point instead.</p>
+              <p class="muted">Networks the Pi uses to reach the internet for updates, first choice at the top: the tower's WiFi, or a phone hotspot. Phones always connect through the Pi's own access point. With a network cable plugged in, the cable is used instead. With a USB WiFi dongle, the dongle stays connected. With neither, the Pi joins one of these briefly when it starts and when you press <em>Check for updates</em>, then comes back to its access point. Leave the list empty to keep the Pi offline.</p>
               <ol id="net-list"></ol>
               <button type="button" id="net-add" class="secondary small">Add a network</button>
             </fieldset>

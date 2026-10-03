@@ -59,6 +59,7 @@ class RingingApi:
             # wall display is never touched by hand, so an update must reach it.
             "version": version.full_version(),
             "rt_reporting": rt is not None,
+            "update_mode": self.app.updates.update_mode or {"active": False},
             "pack": rt["pack"] if rt else None,
             "source": (rt or {}).get("source", {}).get("status"),
             "audio": (rt or {}).get("audio", {}).get("status"),

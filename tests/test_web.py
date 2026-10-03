@@ -250,20 +250,18 @@ class AdminTest(WebTestCase):
     def test_network_change_persists_and_applies(self):
         self.login()
         status, body = self.request("POST", "/api/admin/network", {
-            "mode": "joined",
             "uplinks": [{"ssid": "Church", "psk": "secret99"}, {"ssid": "Tower", "psk": "towerpass"}],
         })
         self.assertEqual(status, 202, body)
         saved = json.loads(self.overrides.read_text())
-        self.assertEqual(saved["network"]["mode"], "joined")
         self.assertEqual([u["ssid"] for u in saved["network"]["uplinks"]], ["Church", "Tower"])
         self.assertEqual(self.overrides.stat().st_mode & 0o777, 0o600)
-        self.assertEqual(self.wait_for_network_apply()["effective"], "joined")
+        self.assertEqual(self.wait_for_network_apply()["plan"], "single")  # one radio in the fake
         _, status_body = self.request("GET", "/api/admin/network")
         self.assertNotIn("secret99", json.dumps(status_body))  # passwords never leave the Pi
         self.assertEqual(status_body["known_networks"], [{"ssid": "Church", "password_set": True},
                                                          {"ssid": "Tower", "password_set": True}])
-        self.assertIsNone(status_body["fallback"])
+        self.assertTrue(status_body["ap_active"])
 
     def test_settings_shown_even_when_nmcli_unreadable(self):
         """The page fills its form from this; a missing name blocked saving."""
@@ -272,7 +270,7 @@ class AdminTest(WebTestCase):
 
         self.app.net.runner = lambda argv, timeout=60: subprocess.CompletedProcess(argv, 8, "", "NetworkManager is not running")
         _, body = self.request("GET", "/api/admin/network")
-        self.assertEqual((body["ap_ssid"], body["mode"]), ("towerboard", "ap"))
+        self.assertEqual(body["ap_ssid"], "towerboard")
 
     def test_internet_sharing_setting(self):
         self.login()
@@ -295,18 +293,15 @@ class AdminTest(WebTestCase):
         saved = json.loads(self.overrides.read_text())["network"]["uplinks"]
         self.assertEqual(saved, [{"ssid": "New", "psk": "newpass1"}, {"ssid": "Church", "psk": "secret99"}])
 
-    def test_fallback_reported(self):
+    def test_network_change_waits_for_update_check(self):
         self.login()
-        self.fake_nm.in_range.clear()
-        self.request("POST", "/api/admin/network", {"mode": "joined", "uplinks": [{"ssid": "Church"}]})
-        result = self.wait_for_network_apply()
-        self.assertEqual(result["effective"], "ap")
-        _, body = self.request("GET", "/api/admin/network")
-        self.assertIn("until the Pi restarts", body["fallback"]["detail"])
+        self.app.supervisor.paused = True  # an update check has the radio
+        _, body = self.request("POST", "/api/admin/network", {"ap_ssid": "St Mary"})
+        self.assertIn("when the update check finishes", body["detail"])
 
     def test_network_change_validated(self):
         self.login()
-        for body in ({"mode": "bogus"}, {"ap_psk": "short"}, {"unknown": 1},
+        for body in ({"mode": "joined"}, {"ap_psk": "short"}, {"unknown": 1},
                      {"uplinks": "Church"}, {"uplinks": [{"ssid": "Church", "psk": "short"}]},
                      {"uplinks": [{"ssid": "x" * 33}]}):
             with self.subTest(body=body):

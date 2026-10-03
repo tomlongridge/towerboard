@@ -89,7 +89,7 @@ async function loadAdmin() {
     $("pin").autocomplete = first ? "new-password" : "current-password";
     return;
   }
-  await Promise.all([loadReleases(), loadNetwork(), loadAudio(), offerTime()]);
+  await Promise.all([loadReleases(), loadUpdates(), loadNetwork(), loadAudio(), offerTime()]);
 }
 
 // Without NTP or an RTC the Pi's date may be wrong; an admin's phone is the best clock
@@ -120,6 +120,55 @@ async function loadReleases() {
   $("rel-systemd").hidden = r.systemd;
   $("rollback").disabled = !r.previous;
 }
+
+// --- updates from GitHub ------------------------------------------------------------
+
+let updatePoll;
+
+async function loadUpdates() {
+  const u = await api("/api/admin/updates");
+  $("upd-how").textContent = `Releases come from github.com/${u.repo}. This Pi: ${u.how}.`;
+  const last = u.last_result
+    ? `Last check${u.last_check_at ? ` (${u.last_check_at.replace("T", " ").replace("Z", " UTC")})` : ""}: ${u.last_result.detail}`
+    : "Not checked yet.";
+  const busy = u.state !== "idle";
+  $("upd-status").textContent = busy ? `${u.message}…` : last;
+  $("upd-check").disabled = busy;
+  const bar = $("upd-progress");
+  bar.hidden = !(busy && u.progress && u.progress.total);
+  if (!bar.hidden) bar.value = (100 * u.progress.done) / u.progress.total;
+  $("upd-available").hidden = !u.available;
+  if (u.available) {
+    $("upd-version").textContent = u.available.version;
+    $("upd-published").textContent = u.available.published_at ? `Published ${u.available.published_at.slice(0, 10)}.` : "";
+    $("upd-notes").textContent = u.available.notes || "No notes.";
+  }
+  clearTimeout(updatePoll);
+  if (busy) updatePoll = setTimeout(() => loadUpdates().catch(() => {}), 2000);
+}
+
+$("upd-check").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/admin/updates/check", { method: "POST" });
+    $("upd-result").textContent = r.how.startsWith("one WiFi radio")
+      ? "Checking. The Towerboard WiFi will go off for a few minutes while the Pi is online; reconnect when it's back."
+      : "";
+    setTimeout(() => loadUpdates().catch(() => {}), 1000);
+  } catch (e) {
+    $("upd-result").textContent = e.message;
+  }
+});
+
+$("upd-apply").addEventListener("click", async () => {
+  if (!confirm(`Install version ${$("upd-version").textContent}? Towerboard restarts, and goes back to this version by itself if anything goes wrong.`)) return;
+  try {
+    const r = await api("/api/admin/updates/apply", { method: "POST" });
+    $("upd-result").textContent = `Applying: ${r.activation}`;
+    if (r.activation.startsWith("handed")) waitForRestart($("upd-version").textContent, $("upd-result"));
+  } catch (e) {
+    $("upd-result").textContent = e.message;
+  }
+});
 
 // Known networks: the page never receives saved passwords. A blank password
 // field means "keep the saved one" (shown as a placeholder).
@@ -162,23 +211,26 @@ $("net-add").addEventListener("click", () => {
 
 async function loadNetwork() {
   const n = await api("/api/admin/network");
-  $("net-mode").value = n.mode;
   $("net-ap-ssid").value = n.ap_ssid || "";
   $("net-share").checked = Boolean(n.ap_share_internet);
   $("net-list").replaceChildren(...(n.known_networks || []).map((k) => netRow(k.ssid, k.password_set)));
   const info = await api("/api/info");
   $("net-ap-psk").value = info.ap_psk;
   const status = $("net-status");
-  status.classList.toggle("warn-text", Boolean(n.fallback));
   if (!n.available) {
     status.textContent = n.detail;
-  } else if (n.fallback) {
-    status.textContent = `No known network was available, so the Pi is running its own access point until it restarts. ${n.fallback.detail}`;
+  } else if (n.error) {
+    status.textContent = `Could not read the network: ${n.error}`;
   } else {
-    const parts = [`Access point ${n.ap_active ? "on" : "off"}`,
-      n.cable_connected ? "network cable connected" : "no network cable",
-      n.connected_ssid ? `joined ${n.connected_ssid}` : "not joined to a network",
-      n.dongle ? `dongle ${n.dongle}` : "no USB dongle"];
+    const internet = {
+      cable: "Internet over the network cable",
+      dongle: n.connected_ssid ? `Internet through the USB dongle (${n.connected_ssid})`
+        : "USB dongle fitted, but not connected to any known network",
+      single: "One WiFi radio: online only while checking for updates",
+      offline: "No known networks and no cable: never online",
+    }[n.plan] || "";
+    const parts = [internet, `access point ${n.ap_active ? "on" : "off"}`];
+    if (n.checking_for_updates) parts.push("checking for updates now");
     if (n.sharing_error) parts.push(n.sharing_error);
     if (n.last_apply) parts.push(`last change: ${n.last_apply.detail}`);
     status.textContent = parts.join(" · ");
@@ -287,7 +339,6 @@ async function waitForRestart(expected, out) {
 
 $("net-form").addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  const mode = $("net-mode").value;
   const uplinks = [...$("net-list").children].map((li) => {
     const entry = { ssid: li.querySelector(".net-ssid").value.trim() };
     const psk = li.querySelector(".net-psk").value;
@@ -295,20 +346,13 @@ $("net-form").addEventListener("submit", async (ev) => {
     return entry;
   }).filter((u) => u.ssid);
   const body = {
-    mode, ap_ssid: $("net-ap-ssid").value, ap_psk: $("net-ap-psk").value,
+    ap_ssid: $("net-ap-ssid").value, ap_psk: $("net-ap-psk").value,
     ap_share_internet: $("net-share").checked, uplinks,
   };
-  if (mode !== "ap" && !uplinks.length) {
-    $("net-result").textContent = "Add at least one known network for this mode.";
-    return;
-  }
-  if (mode === "joined" && !confirm(
-    "The Pi will leave its own access point and join one of your known networks. " +
-    "If none is available, the access point comes back on its own. Continue?")) return;
   try {
     const r = await api("/api/admin/network", { method: "POST", body });
     $("net-result").textContent = r.applied === "in progress"
-      ? "Saved. Applying now; you may need to reconnect to the WiFi."
+      ? "Saved. If you changed the access point's name or password, reconnect to it."
       : r.detail;
     setTimeout(loadNetwork, 4000);
   } catch (e) {
@@ -362,6 +406,16 @@ function onStrike(p, t) {
   }, delay);
 }
 
+// Requirements: "Update mode information" — while a single-radio Pi is online
+// checking for updates, its WiFi is off; the wall (local, unaffected) says so.
+function showUpdateMode(u) {
+  $("update-mode").hidden = !u.active;
+  if (u.active) {
+    $("update-mode-message").textContent = u.message;
+    $("update-mode-stuck").textContent = u.if_stuck;
+  }
+}
+
 function showRinging(on) {
   $("ringing").hidden = !on;
   $("idle").hidden = on;
@@ -386,6 +440,7 @@ function connectEvents() {
       pageVersion = env.payload.version;
     }
     if (env.type === "strike") onStrike(env.payload, env.t);
+    if (env.type === "state" && env.payload.update_mode) showUpdateMode(env.payload.update_mode);
     if (env.type === "state" && env.payload.strokes_reset) {
       for (const el of bellEls.values()) el.classList.remove("hand", "back");
     }

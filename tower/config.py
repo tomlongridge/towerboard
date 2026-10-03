@@ -37,7 +37,7 @@ OVERRIDES_PATH = Path("/var/lib/tower/overrides.json")
 
 SOURCE_KINDS = ("serial", "synthetic")  # replay: M3
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
-NETWORK_MODES = ("ap", "joined", "dual")
+UPDATE_CHANNELS = ("stable", "pre")
 
 
 class ConfigError(ValueError):
@@ -132,21 +132,21 @@ class AdminSection:
 
 @dataclass(frozen=True)
 class NetworkSection:
-    mode: str = "ap"
-    ap_interface: str = "wlan0"  # onboard radio
+    # No mode to choose: behaviour follows the hardware (design C16).
+    ap_interface: str = "wlan0"  # onboard radio: always the access point
     ap_ssid: str = "towerboard"
     ap_psk: str = "bellringing"
     # Whether phones on the access point may reach the internet through the Pi
     # (over the cable or the dongle). Off: the AP is local only.
     ap_share_internet: bool = False
-    # Known networks to join, in order of preference: [{ssid = "...", psk = "..."}].
+    # Known networks for reaching the internet, first choice first:
+    # [{ssid = "...", psk = "..."}]. Joined by a USB dongle, or with a single
+    # radio only during an update check. None: the Pi never goes online.
     # uplink_ssid/uplink_psk is the older single-network form, still honoured first.
     uplinks: list = field(default_factory=list)
     uplink_ssid: str = ""
     uplink_psk: str = ""
     join_timeout_s: float = 30.0
-    # Single radio: with no known network for this long, run the AP until reboot.
-    fallback_after_s: float = 90.0
 
     def uplink_networks(self) -> list[tuple[str, str]]:
         """Every known network as (ssid, psk), first preference first, without duplicates."""
@@ -162,6 +162,15 @@ class UpdateSection:
     allowed_signers: str = "/etc/tower/allowed_signers"
     health_timeout_s: float = 60.0
     units: list = field(default_factory=lambda: ["tower.service", "tower-rt.service"])
+    # Releases are published as GitHub release assets (design C15).
+    github_repo: str = "tomlongridge/towerboard"
+    channel: str = "stable"  # "pre" also offers pre-releases
+    check_interval_h: float = 24.0  # while online (cable or dongle)
+    # Single radio: a check waits until the bells have been quiet this long,
+    # and the access point is down for at most check_window_s.
+    quiet_s: float = 120.0
+    check_window_s: float = 600.0
+    ntp_wait_s: float = 60.0  # HTTPS needs a correct clock
 
 
 @dataclass(frozen=True)
@@ -307,8 +316,10 @@ def _build(merged: dict[str, dict[str, Any]]) -> Config:
         raise ConfigError(f"source.kind must be one of {SOURCE_KINDS}, got {cfg.source.kind!r}")
     if cfg.log.level.upper() not in LOG_LEVELS:
         raise ConfigError(f"log.level must be one of {LOG_LEVELS}, got {cfg.log.level!r}")
-    if cfg.network.mode not in NETWORK_MODES:
-        raise ConfigError(f"network.mode must be one of {NETWORK_MODES}, got {cfg.network.mode!r}")
+    if cfg.update.channel not in UPDATE_CHANNELS:
+        raise ConfigError(f"update.channel must be one of {UPDATE_CHANNELS}, got {cfg.update.channel!r}")
+    if len(cfg.update.github_repo.split("/")) != 2 or not all(cfg.update.github_repo.split("/")):
+        raise ConfigError(f'update.github_repo must be "owner/name", got {cfg.update.github_repo!r}')
     if not 8 <= len(cfg.network.ap_psk) <= 63:
         raise ConfigError("network.ap_psk must be 8..63 characters (WPA2)")
     if not 1 <= len(cfg.network.ap_ssid.encode()) <= 32:

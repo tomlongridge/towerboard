@@ -108,7 +108,15 @@ It also sets up the belfry display: `tower-kiosk.service` runs Chromium full scr
 
 **Upgrading from 0.2 (M1) to 0.3 (M2)** needs `install.sh` run once more, because M2 adds system pieces an update cannot install (the `tower-rt.service` unit, Debian packages, udev and polkit rules). Uploading 0.3 to an M1 install through the admin page rolls back automatically, because the health check can't find `tower-rt.service`. It refuses to run if the Pi is on WiFi and no `[network]` config exists, because the default `ap` mode would take over `wlan0` and drop your session.
 
-**Every later update** goes through the update pipeline: upload the bundle on the admin page, or from the Mac:
+**Publishing a release** for towers to update from: bump `__version__` in `tower/__init__.py`, commit and push to `main`, then:
+
+```bash
+make release
+```
+
+It refuses unless the tree is clean, `main` matches GitHub, the tests pass and the version isn't already published. It builds and signs the bundle on your Mac (the signing key never goes to GitHub), checks it as a tower would, tags the commit `v<version>`, and creates the GitHub release with the bundle attached. Towers find it at their next check and offer it on the admin page; nothing is applied until an admin presses *Apply*. A version with a `-` (e.g. `0.5.0-rc.1`) is published as a pre-release, offered only to towers with `update.channel = "pre"`.
+
+**During development**, deploy straight to your desk Pi without publishing: upload the bundle on the admin page, or from the Mac:
 
 ```bash
 make deploy
@@ -117,6 +125,30 @@ make deploy
 `make` on its own lists the other tasks (`test`, `serve`, `rt`, `status`, `logs`, …). Put your Pi's address in `local.mk` (not committed) as `PI = ringer@your-pi.local`, and run `make ssh-key` once for password-free login.
 
 The round trip runs the tests, builds a signed release (uncommitted changes get a timestamped version, so every build is distinct), copies it over, installs it through the updater, and waits for the restart and health check. It ends with the result and how long it took. Every deploy restarts the app and sound services: each release is a separate folder and a running process stays pinned to the one it started from. For fast iteration on the web pages, use `make serve` on the Mac and deploy when it's ready.
+
+**Hot deploy** for trying small changes on the Pi in seconds:
+
+```bash
+make hot
+```
+
+It copies only the files under `tower/` that changed since the last hot deploy onto the release that's installed, then restarts the app (and the sound process only if its code changed: anything under `tower/rt/` or a module it imports). One `sudo` password prompt; needs `rsync` on the Pi (`sudo apt install rsync`). There are no tests, no signature, no health check and no rollback, so a broken change breaks the app until you fix it or `make deploy`. The installed release no longer matches what was signed, so its version gains `.hot.<time>`, shown on the admin page and Diagnostics (and the belfry screen reloads for it). Use it on a desk Pi only; `make deploy` or a real update puts a proper release back. One catch: after a hot deploy, that release can become *previous*, so a rollback goes back to the hot-patched code.
+
+**Watch mode** hot-deploys on every save:
+
+```bash
+make watch
+```
+
+It polls `tower/` once a second, waits for a burst of saves to settle, then runs a hot deploy; Ctrl-C stops it. It can't stop to ask for a password, so run this once first:
+
+```bash
+make hot-setup
+```
+
+That installs `/etc/sudoers.d/tower-hot` on the Pi, letting your Pi user run exactly the three commands a hot deploy needs (copy into the installed release, write the `HOT` marker, restart the app) without a password, and nothing else. It still lets you put code on the Pi that runs as the `tower` user, which is the point, so never do it on a Pi going into a tower. `make hot-teardown` removes it.
+
+**A desk Pi with only WiFi** runs its own access point like any tower (there are no network modes). To work with it, either plug in a network cable (it then stays on your network at its usual name, with internet over the cable), or join its WiFi on the Mac and set `PI = <user>@10.42.0.1` in `local.mk`. While the Mac is on the Pi's network it has no internet, so `make deploy` still works but `uv sync` and `make release` don't.
 
 This builds, copies and installs through the same verify → stage → swap → health check → auto-rollback path a tower uses, never by rsyncing over a live tree. Layout on the Pi:
 

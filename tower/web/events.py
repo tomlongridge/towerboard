@@ -65,6 +65,7 @@ class EventBus:
         self.rt_status: dict | None = None
         self.rt_status_at: float | None = None
         self.rt_bad = 0
+        self.last_strike_at: float | None = None  # monotonic; an update check waits for quiet
         self.dropped_total = 0  # from subscribers that have gone
 
     # --- publishing ------------------------------------------------------------
@@ -86,6 +87,8 @@ class EventBus:
             self.rt_bad += 1
             log.warning("bad envelope from RT: %s", e)
             return
+        if env.type == "strike":
+            self.last_strike_at = self.clock.now()
         if env.type == "system" and isinstance(env.payload.get("rt"), dict):
             self.rt_status = dict(env.payload["rt"])
             self.rt_status_at = self.clock.now()

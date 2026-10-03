@@ -10,7 +10,7 @@ KEY ?= $(HOME)/.ssh/tower-release
 PI_HOST = $(lastword $(subst @, ,$(PI)))
 
 .DEFAULT_GOAL := help
-.PHONY: help setup test serve rt render build deploy status logs reboot ssh ssh-key
+.PHONY: help setup test serve rt render build release deploy hot watch hot-setup hot-teardown status logs reboot ssh ssh-key
 
 help: ## List the tasks
 	@grep -E '^[a-z-]+:.*## ' $(firstword $(MAKEFILE_LIST)) | sed -E 's/^([^:]+):.*## /  make \1\t/' | expand -t 20
@@ -34,8 +34,23 @@ render: ## Render 30 s of synthetic ringing to touch.wav and play it
 build: ## Build a signed release into dist/
 	uv run python -m tower.release build --key $(KEY)
 
+release: ## Publish the version in tower/__init__.py on GitHub, for towers to update from
+	TOWER_SIGNING_KEY=$(KEY) scripts/publish-release.sh
+
 deploy: test ## Test, build, install on the Pi and wait for its health check
 	TOWER_SIGNING_KEY=$(KEY) scripts/deploy-dev.sh $(PI)
+
+hot: ## Development only: copy changed files onto the Pi and restart, in seconds (no tests, no safety net)
+	scripts/hot-deploy.sh $(PI)
+
+watch: ## Development only: hot deploy on every save (Ctrl-C to stop; needs make hot-setup once)
+	uv run python scripts/watch.py $(PI)
+
+hot-setup: ## Let make hot and make watch run without a password (development Pi only)
+	scripts/hot-setup.sh $(PI) setup
+
+hot-teardown: ## Undo make hot-setup
+	scripts/hot-setup.sh $(PI) teardown
 
 status: ## Show the Pi's services and health
 	@ssh $(PI) 'systemctl --no-pager status tower tower-rt tower-kiosk | grep -E "●|Active"; curl -s localhost/api/health; echo'

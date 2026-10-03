@@ -1,4 +1,4 @@
-"""Network modes against a scripted nmcli.
+"""Network behaviour against a scripted nmcli.
 
 This checks the decisions (which profiles, which radio, when to fall back),
 not NetworkManager itself; that is exercised on the Pi (design §3).
@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 
 from tower.config import NetworkSection
-from tower.net import LOCAL_ONLY, SHARED, AP_CON, UPLINK_CON, NetworkManager, Watchdog, is_uplink_con
+from tower.net import AP_CON, LOCAL_ONLY, SHARED, UPLINK_CON, NetworkManager, Supervisor, is_uplink_con
 
 CHURCH = {"ssid": "Church", "psk": "secret99"}
 
@@ -94,331 +94,273 @@ def manager(fake, sharing_conf=None, **cfg):
     return NetworkManager(NetworkSection(**cfg), runner=fake, sharing_conf=sharing_conf or sharing_file())
 
 
-class ApModeTest(unittest.TestCase):
-    def test_creates_shared_wpa_access_point(self):
+TOWER = {"ssid": "Tower", "psk": "towerpass"}
+
+
+class PlanTest(unittest.TestCase):
+    """Behaviour follows the hardware (design C16)."""
+
+    def test_plans(self):
+        cases = [
+            ({"cable": True, "devices": ("wlan0", "wlan1")}, [CHURCH], "cable"),  # cable beats the dongle
+            ({"devices": ("wlan0", "wlan1")}, [CHURCH], "dongle"),
+            ({"devices": ("wlan0",)}, [CHURCH], "single"),
+            ({"devices": ("wlan0", "wlan1")}, [], "offline"),
+            ({"cable": True}, [], "cable"),  # a cable needs no known networks
+        ]
+        for hw, nets, want in cases:
+            with self.subTest(hw=hw, nets=nets):
+                fake = FakeNmcli(devices=hw.get("devices", ("wlan0",)))
+                fake.cable = hw.get("cable", False)
+                self.assertEqual(manager(fake, uplinks=nets).plan(), want)
+
+
+class ApplyTest(unittest.TestCase):
+    def test_access_point_always_on(self):
+        for devices, cable, nets in [(("wlan0",), False, []), (("wlan0",), False, [CHURCH]),
+                                     (("wlan0",), True, [CHURCH]), (("wlan0", "wlan1"), False, [CHURCH])]:
+            with self.subTest(devices=devices, cable=cable, nets=nets):
+                fake = FakeNmcli(devices=devices)
+                fake.cable = cable
+                m = manager(fake, uplinks=nets)
+                r = m.apply()
+                self.assertTrue(r.ok, r.detail)
+                self.assertEqual(fake.active.get(AP_CON), "wlan0")
+                self.assertTrue(m.in_effect())
+
+    def test_ap_settings(self):
         fake = FakeNmcli()
-        r = manager(fake, mode="ap", ap_ssid="St Mary", ap_psk="ringing123").apply()
-        self.assertTrue(r.ok)
-        self.assertEqual(r.effective, "ap")
+        manager(fake, ap_ssid="St Mary", ap_psk="ringing123").apply()
         p = fake.props[AP_CON]
-        self.assertEqual(p["802-11-wireless.mode"], "ap")
-        self.assertEqual(p["802-11-wireless.ssid"], "St Mary")
-        self.assertEqual(p["ipv4.method"], "shared")
-        self.assertEqual(p["wifi-sec.psk"], "ringing123")
-        self.assertEqual(p["connection.autoconnect"], "yes")
-        self.assertEqual(fake.active, {AP_CON: "wlan0"})
+        self.assertEqual((p["802-11-wireless.mode"], p["802-11-wireless.ssid"]), ("ap", "St Mary"))
+        self.assertEqual((p["ipv4.method"], p["wifi-sec.psk"]), ("shared", "ringing123"))
+        self.assertEqual(p["connection.autoconnect"], "yes")  # always boots onto the AP
+        self.assertEqual(p["802-11-wireless.powersave"], "2")
 
-    def test_apply_is_idempotent_modify_not_recreate(self):
+    def test_single_radio_never_autojoins(self):
+        """The AP must win at boot: known networks on the onboard radio never autoconnect."""
         fake = FakeNmcli()
-        m = manager(fake, mode="ap")
+        m = manager(fake, uplinks=[CHURCH, TOWER])
+        r = m.apply()
+        self.assertEqual(r.plan, "single")
+        self.assertEqual(fake.active, {AP_CON: "wlan0"})
+        for name in (UPLINK_CON, "tower-uplink-2"):
+            self.assertEqual(fake.props[name]["connection.autoconnect"], "no")
+            self.assertEqual(fake.props[name]["connection.interface-name"], "wlan0")
+        self.assertGreater(int(fake.props[AP_CON]["connection.autoconnect-priority"]),
+                           int(fake.props[UPLINK_CON]["connection.autoconnect-priority"]))
+
+    def test_dongle_joins_first_known_network_in_range(self):
+        fake = FakeNmcli(devices=("wlan0", "wlan1"), in_range=("Tower",))
+        m = manager(fake, uplinks=[CHURCH, TOWER])
+        r = m.apply()
+        self.assertTrue(r.ok, r.detail)
+        self.assertEqual(fake.active, {AP_CON: "wlan0", "tower-uplink-2": "wlan1"})
+        self.assertEqual(fake.props[UPLINK_CON]["connection.autoconnect"], "yes")
+        self.assertTrue(m.online())
+
+    def test_dongle_with_nothing_in_range_keeps_ap(self):
+        fake = FakeNmcli(devices=("wlan0", "wlan1"), in_range=())
+        m = manager(fake, uplinks=[CHURCH])
+        r = m.apply()
+        self.assertFalse(r.ok)
+        self.assertIn("in range", r.detail)
+        self.assertEqual(fake.active, {AP_CON: "wlan0"})
+        self.assertFalse(m.online())
+
+    def test_cable_is_online_and_dongle_unused(self):
+        fake = FakeNmcli(devices=("wlan0", "wlan1"))
+        fake.cable = True
+        m = manager(fake, uplinks=[CHURCH])
+        r = m.apply()
+        self.assertEqual(r.plan, "cable")
+        self.assertEqual(fake.active, {AP_CON: "wlan0"})
+        self.assertTrue(m.online())
+
+    def test_offline_and_single_are_not_online(self):
+        self.assertFalse(manager(FakeNmcli()).online())
+        self.assertFalse(manager(FakeNmcli(), uplinks=[CHURCH]).online())
+
+    def test_apply_does_not_restart_a_running_ap(self):
+        """Re-activating the AP would drop every phone on it."""
+        fake = FakeNmcli()
+        m = manager(fake)
         m.apply()
         m.apply()
-        adds = [c for c in fake.calls if c[1:3] == ["connection", "add"]]
-        self.assertEqual(len(adds), 1)
-
-    def test_switching_joined_to_ap_survives_reboot(self):
-        """Known networks must stop autoconnecting, or the next boot rejoins one instead of the AP."""
-        fake = FakeNmcli()
-        manager(fake, mode="joined", uplinks=[CHURCH, {"ssid": "Tower", "psk": "towerpass"}]).apply()
-        r = manager(fake, mode="ap", uplinks=[CHURCH]).apply()
-        self.assertTrue(r.ok, r.detail)
-        self.assertEqual(fake.active, {AP_CON: "wlan0"})
-        self.assertEqual(fake.props[UPLINK_CON]["connection.autoconnect"], "no")
-        self.assertEqual(fake.props["tower-uplink-2"]["connection.autoconnect"], "no")
-        self.assertEqual(fake.props[AP_CON]["connection.autoconnect"], "yes")
-
-    def test_ap_failure_is_reported(self):
-        for mode in ("ap", "dual"):
-            with self.subTest(mode=mode):
-                r = manager(FakeNmcli(ap_ok=False), mode=mode).apply()
-                self.assertFalse(r.ok)
-                self.assertEqual(r.effective, "none")
-                self.assertIn("not available", r.detail)
-
-
-class JoinedModeTest(unittest.TestCase):
-    def test_joins_first_known_network_in_range(self):
-        fake = FakeNmcli(in_range=("Tower",))
-        nets = [CHURCH, {"ssid": "Tower", "psk": "towerpass"}]
-        r = manager(fake, mode="joined", uplinks=nets).apply()
-        self.assertTrue(r.ok, r.detail)
-        self.assertEqual(r.detail, "joined Tower")
-        self.assertEqual(fake.active, {"tower-uplink-2": "wlan0"})
-        self.assertEqual(fake.props[AP_CON]["connection.autoconnect"], "no")
-
-    def test_profile_per_network_in_preference_order(self):
-        fake = FakeNmcli()
-        nets = [CHURCH, {"ssid": "Tower", "psk": "towerpass"}, {"ssid": "Open"}]
-        manager(fake, mode="joined", uplinks=nets).apply()
-        prio = [int(fake.props[n]["connection.autoconnect-priority"])
-                for n in (UPLINK_CON, "tower-uplink-2", "tower-uplink-3")]
-        self.assertEqual(prio, sorted(prio, reverse=True))
-        self.assertGreater(min(prio), int(fake.props[AP_CON]["connection.autoconnect-priority"]))
-        self.assertNotIn("wifi-sec.psk", fake.props["tower-uplink-3"])  # open network
-        self.assertEqual(fake.active, {UPLINK_CON: "wlan0"})
+        ups = [c for c in fake.calls if c[-3:-1] == ["connection", "up"] and c[-1] == AP_CON]
+        self.assertEqual(len(ups), 1)
 
     def test_removed_networks_lose_their_profiles(self):
         fake = FakeNmcli()
-        manager(fake, mode="joined", uplinks=[CHURCH, {"ssid": "Tower", "psk": "towerpass"}]).apply()
-        manager(fake, mode="joined", uplinks=[CHURCH]).apply()
+        manager(fake, uplinks=[CHURCH, TOWER]).apply()
+        manager(fake, uplinks=[CHURCH]).apply()
         self.assertNotIn("tower-uplink-2", fake.connections)
 
     def test_older_single_network_setting_still_works(self):
-        fake = FakeNmcli()
-        r = manager(fake, mode="joined", uplink_ssid="Church", uplink_psk="secret99").apply()
+        fake = FakeNmcli(devices=("wlan0", "wlan1"))
+        r = manager(fake, uplink_ssid="Church", uplink_psk="secret99").apply()
         self.assertTrue(r.ok, r.detail)
         self.assertEqual(fake.props[UPLINK_CON]["802-11-wireless.ssid"], "Church")
 
-    def test_none_in_range_runs_ap_until_reboot(self):
-        """Requirement: not found → AP until rebooted. Nothing persistent may change."""
-        fake = FakeNmcli(in_range=("Elsewhere",))
-        r = manager(fake, mode="joined", uplinks=[CHURCH]).apply()
+    def test_open_network(self):
+        fake = FakeNmcli(devices=("wlan0", "wlan1"))
+        manager(fake, uplinks=[{"ssid": "Open"}]).apply()
+        self.assertNotIn("wifi-sec.psk", fake.props[UPLINK_CON])
+
+    def test_ap_failure_is_reported(self):
+        r = manager(FakeNmcli(ap_ok=False)).apply()
         self.assertFalse(r.ok)
-        self.assertEqual(r.effective, "ap")
-        self.assertIn("in range", r.detail)
-        self.assertIn("until the Pi restarts", r.detail)
-        self.assertEqual(fake.active, {AP_CON: "wlan0"})
-        self.assertEqual(fake.props[AP_CON]["connection.autoconnect"], "no")  # gone after reboot
-        self.assertEqual(fake.props[UPLINK_CON]["connection.autoconnect"], "yes")  # tried again after reboot
+        self.assertIn("not available", r.detail)
 
-    def test_wrong_password_tries_next_then_falls_back(self):
-        fake = FakeNmcli(refuse=("Church",), in_range=("Church",))
-        r = manager(fake, mode="joined", uplinks=[CHURCH]).apply()
-        self.assertEqual(r.effective, "ap")
-        self.assertIn("Church: Error: secrets were required", r.detail)
-        fake = FakeNmcli(refuse=("Church",))
-        r = manager(fake, mode="joined", uplinks=[CHURCH, {"ssid": "Tower", "psk": "towerpass"}]).apply()
-        self.assertTrue(r.ok, r.detail)
-        self.assertEqual(r.detail, "joined Tower")
-
-    def test_no_known_networks_runs_ap(self):
+    def test_imager_wifi_profile_is_replaced_by_the_ap(self):
+        """A Pi imaged with home WiFi settings ends up on its AP: one way to connect everywhere."""
         fake = FakeNmcli()
-        r = manager(fake, mode="joined").apply()
-        self.assertFalse(r.ok)
+        fake.os_wifi["wlan0"] = "Home"
+        fake.active["preconfigured"] = "wlan0"
+        manager(fake, uplinks=[CHURCH]).apply()
         self.assertEqual(fake.active, {AP_CON: "wlan0"})
 
-    def test_on_known_network_through_os_profile_is_in_effect(self):
-        """Imager's own WiFi profile already on a known network: don't reconnect (drops SSH)."""
-        fake = FakeNmcli()
-        fake.os_wifi["wlan0"] = "Tower"
-        m = manager(fake, mode="joined", uplinks=[CHURCH, {"ssid": "Tower", "psk": "towerpass"}])
-        self.assertTrue(m.in_effect())
-        fake.os_wifi["wlan0"] = "Somewhere else"
-        self.assertFalse(m.in_effect())
-        self.assertFalse(manager(fake, mode="joined").in_effect())
 
+class SingleRadioCheckTest(unittest.TestCase):
+    """The update check: leave the AP, join a known network, come back."""
 
-class CableTest(unittest.TestCase):
-    """Joined mode with a network cable: the cable is the internet, the radio runs the AP."""
-
-    def test_cable_means_access_point(self):
-        fake = FakeNmcli()
-        fake.cable = True
-        m = manager(fake, mode="joined", uplinks=[CHURCH])
-        r = m.apply()
-        self.assertTrue(r.ok, r.detail)
-        self.assertEqual(r.effective, "ap+cable")
-        self.assertEqual(fake.active, {AP_CON: "wlan0"})
-        self.assertTrue(m.in_effect())
-        # Not persistent: at boot the known networks still autoconnect; the app re-checks the cable.
-        self.assertEqual(fake.props[AP_CON]["connection.autoconnect"], "no")
-
-    def test_cable_in_effect_needs_the_ap(self):
-        fake = FakeNmcli()
-        m = manager(fake, mode="joined", uplinks=[CHURCH])
-        m.apply()  # joined Church over WiFi
-        fake.cable = True
-        self.assertFalse(m.in_effect())  # cable now present, but the radio is still a client
-
-    def test_watchdog_follows_cable_in_and_out(self):
-        fake = FakeNmcli()
-        m = manager(fake, mode="joined", uplinks=[CHURCH])
+    def test_go_online_then_back(self):
+        fake = FakeNmcli(in_range=("Tower",))
+        m = manager(fake, uplinks=[CHURCH, TOWER])
         m.apply()
-        dog = Watchdog(m, now=0)
-        self.assertIsNone(dog.check(10))  # first look: nothing changed
-        fake.cable = True
-        r = dog.check(20)
-        self.assertEqual(r.effective, "ap+cable")
+        ok, detail = m.go_online()
+        self.assertEqual((ok, detail), (True, "joined Tower"))
+        self.assertEqual(fake.active, {"tower-uplink-2": "wlan0"})
+        self.assertFalse(m.in_effect())
+        r = m.back_to_ap()
+        self.assertTrue(r.ok)
         self.assertEqual(fake.active, {AP_CON: "wlan0"})
-        self.assertIsNone(dog.check(200))  # cable still in: stays on the AP, no fallback
+
+    def test_nothing_in_range_returns_to_ap_at_once(self):
+        fake = FakeNmcli(in_range=("Elsewhere",))
+        m = manager(fake, uplinks=[CHURCH])
+        m.apply()
+        ok, detail = m.go_online()
+        self.assertFalse(ok)
+        self.assertIn("in range", detail)
+        self.assertEqual(fake.active, {AP_CON: "wlan0"})
+
+    def test_wrong_password_tries_the_next(self):
+        fake = FakeNmcli(refuse=("Church",))
+        m = manager(fake, uplinks=[CHURCH, TOWER])
+        m.apply()
+        self.assertEqual(m.go_online(), (True, "joined Tower"))
+        m.back_to_ap()
+        fake = FakeNmcli(refuse=("Church",), in_range=("Church",))
+        m = manager(fake, uplinks=[CHURCH])
+        m.apply()
+        ok, detail = m.go_online()
+        self.assertFalse(ok)
+        self.assertIn("Church: Error: secrets were required", detail)
+        self.assertEqual(fake.active, {AP_CON: "wlan0"})
+
+    def test_no_known_networks(self):
+        fake = FakeNmcli()
+        m = manager(fake)
+        m.apply()
+        self.assertEqual(m.go_online(), (False, "no known networks configured"))
+        self.assertEqual(fake.active, {AP_CON: "wlan0"})
+
+
+class SupervisorTest(unittest.TestCase):
+    def test_follows_cable_and_dongle(self):
+        fake = FakeNmcli()
+        m = manager(fake, uplinks=[CHURCH])
+        sup = Supervisor(m)
+        self.assertEqual(sup.check().plan, "single")
+        self.assertIsNone(sup.check())  # nothing changed
+        fake.cable = True
+        self.assertEqual(sup.check().plan, "cable")
         fake.cable = False
-        r = dog.check(210)
-        self.assertEqual((r.effective, r.detail), ("joined", "joined Church"))
+        fake.devices = ["wlan0", "wlan1"]
+        r = sup.check()
+        self.assertEqual(r.plan, "dongle")
+        self.assertEqual(fake.active, {AP_CON: "wlan0", UPLINK_CON: "wlan1"})
+        fake.devices = ["wlan0"]
+        fake.active.pop(UPLINK_CON)
+        self.assertEqual(sup.check().plan, "single")
+
+    def test_restores_ap_that_went_down(self):
+        fake = FakeNmcli()
+        sup = Supervisor(manager(fake))
+        sup.check()
+        fake.active.clear()
+        self.assertIsNotNone(sup.check())
+        self.assertEqual(fake.active, {AP_CON: "wlan0"})
+
+    def test_paused_during_update_check(self):
+        fake = FakeNmcli()
+        sup = Supervisor(manager(fake, uplinks=[CHURCH]))
+        sup.check()
+        sup.net.go_online()
+        sup.paused = True
+        self.assertIsNone(sup.check())  # must not snatch the radio back mid-check
         self.assertEqual(fake.active, {UPLINK_CON: "wlan0"})
 
-    def test_unplugging_with_no_known_network_falls_back(self):
-        fake = FakeNmcli(in_range=())
-        fake.cable = True
-        m = manager(fake, mode="joined", uplinks=[CHURCH])
-        m.apply()
-        dog = Watchdog(m, now=0)
-        dog.check(10)
-        fake.cable = False
-        r = dog.check(20)
-        self.assertEqual(r.effective, "ap")
-        self.assertIn("until the Pi restarts", r.detail)
-        self.assertIsNotNone(dog.fell_back)
-
-    def test_plugging_in_after_fallback_reapplies(self):
-        fake = FakeNmcli(in_range=())
-        m = manager(fake, mode="joined", uplinks=[CHURCH])
-        m.apply()  # fell back
-        dog = Watchdog(m, now=0)
-        dog.check(10)
-        dog.check(200)
-        fake.cable = True
-        r = dog.check(210)
-        self.assertEqual(r.effective, "ap+cable")
-        self.assertIsNone(dog.fell_back)
-
-    def test_cable_irrelevant_in_ap_mode(self):
-        fake = FakeNmcli()
-        fake.cable = True
-        r = manager(fake, mode="ap").apply()
-        self.assertEqual(r.effective, "ap")
+    def test_known_network_change_reapplies(self):
+        fake = FakeNmcli(devices=("wlan0", "wlan1"))
+        m = manager(fake, uplinks=[CHURCH])
+        sup = Supervisor(m)
+        sup.check()
+        m.cfg = NetworkSection(uplinks=[TOWER])
+        self.assertIsNotNone(sup.check())
+        self.assertEqual(fake.props[UPLINK_CON]["802-11-wireless.ssid"], "Tower")
 
 
 class SharingTest(unittest.TestCase):
     def test_local_only_by_default(self):
         conf = sharing_file()
-        manager(FakeNmcli(), sharing_conf=conf, mode="ap").apply()
+        manager(FakeNmcli(), sharing_conf=conf).apply()
         self.assertEqual(conf.read_text(), LOCAL_ONLY)
         self.assertIn("dhcp-option=option:router\n", LOCAL_ONLY)  # no default route offered
 
     def test_sharing_on(self):
         conf = sharing_file()
-        manager(FakeNmcli(), sharing_conf=conf, mode="ap", ap_share_internet=True).apply()
+        manager(FakeNmcli(), sharing_conf=conf, ap_share_internet=True).apply()
         self.assertEqual(conf.read_text(), SHARED)
-        self.assertNotIn("dhcp-option", SHARED)
 
     def test_written_before_the_access_point_starts(self):
         """dnsmasq reads it when the AP starts, so it must be in place first."""
         conf = sharing_file()
         fake = FakeNmcli()
         seen = []
-        original = fake.__call__
 
         def spy(argv, timeout=60):
             if argv[-3:-1] == ["connection", "up"] and argv[-1] == AP_CON:
                 seen.append(conf.read_text())
-            return original(argv, timeout)
+            return fake(argv, timeout)
 
-        manager(spy, sharing_conf=conf, mode="ap").apply()
+        manager(spy, sharing_conf=conf).apply()
         self.assertEqual(seen, [LOCAL_ONLY])
 
     def test_missing_file_reported_but_ap_still_starts(self):
         missing = Path(tempfile.mkdtemp()) / "nope" / "tower-ap.conf"
-        fake = FakeNmcli()
-        m = manager(fake, sharing_conf=missing, mode="ap")
+        m = manager(FakeNmcli(), sharing_conf=missing)
         with self.assertLogs("tower.net", "ERROR"):
             r = m.apply()
         self.assertTrue(r.ok)
         self.assertIn("install.sh", m.status()["sharing_error"])
 
 
-class DualModeTest(unittest.TestCase):
-    def test_uplink_on_dongle(self):
-        fake = FakeNmcli(devices=("wlan0", "wlan1"))
-        r = manager(fake, mode="dual", uplinks=[CHURCH]).apply()
-        self.assertTrue(r.ok, r.detail)
-        self.assertEqual(fake.active, {AP_CON: "wlan0", UPLINK_CON: "wlan1"})
-
-    def test_without_dongle_degrades_to_ap(self):
-        fake = FakeNmcli(devices=("wlan0",))
-        r = manager(fake, mode="dual", uplinks=[CHURCH]).apply()
-        self.assertFalse(r.ok)
-        self.assertEqual(r.effective, "ap")
-        self.assertIn("dongle", r.detail)
-        self.assertEqual(fake.active, {AP_CON: "wlan0"})
-
-    def test_failed_join_keeps_ap(self):
-        fake = FakeNmcli(devices=("wlan0", "wlan1"), join_ok=False)
-        r = manager(fake, mode="dual", uplinks=[CHURCH]).apply()
-        self.assertEqual(r.effective, "ap")
-        self.assertEqual(fake.active, {AP_CON: "wlan0"})
-
-    def test_dongle_on_os_profile_is_in_effect(self):
-        fake = FakeNmcli(devices=("wlan0", "wlan1"))
-        m = manager(fake, mode="dual", uplinks=[CHURCH])
-        m._ensure_ap(autoconnect=True)
-        m._up(AP_CON)
-        self.assertFalse(m.in_effect())
-        fake.os_wifi["wlan1"] = "Church"
-        self.assertTrue(m.in_effect())
-
-
-class WatchdogTest(unittest.TestCase):
-    def setUp(self):
-        self.fake = FakeNmcli()
-        self.net = manager(self.fake, mode="joined", uplinks=[CHURCH], fallback_after_s=90)
-        self.net.apply()
-        self.dog = Watchdog(self.net, now=0)
-
-    def test_connection_lost_runs_ap_until_reboot(self):
-        """Requirement: connection lost → AP until rebooted."""
-        self.assertIsNone(self.dog.check(10))
-        self.fake.active.clear()  # the network went away
-        self.fake.in_range.clear()
-        self.assertIsNone(self.dog.check(60))  # within the grace period: NM may reconnect
-        r = self.dog.check(101)
-        self.assertIsNotNone(r)
-        self.assertIn("until the Pi restarts", r.detail)
-        self.assertEqual(self.fake.active, {AP_CON: "wlan0"})
-        self.assertEqual(self.fake.props[UPLINK_CON]["connection.autoconnect"], "yes")
-        self.assertIsNone(self.dog.check(500))  # stays on the AP: no flapping
-
-    def test_brief_drop_does_not_fall_back(self):
-        self.fake.active.clear()
-        self.assertIsNone(self.dog.check(50))
-        self.net.apply()  # NM reconnected
-        self.assertIsNone(self.dog.check(80))
-        self.assertIsNone(self.dog.check(150))
-        self.assertIsNone(self.dog.fell_back)
-
-    def test_booting_out_of_range_falls_back(self):
-        self.fake.active.clear()
-        dog = Watchdog(self.net, now=1000)
-        self.assertIsNone(dog.check(1050))
-        self.assertIsNotNone(dog.check(1095))
-
-    def test_only_in_joined_mode(self):
-        self.net.cfg = NetworkSection(mode="ap")
-        self.fake.active.clear()
-        self.assertIsNone(self.dog.check(1000))
-
-    def test_reset_after_deliberate_change(self):
-        self.fake.active.clear()
-        self.dog.check(100)
-        self.assertIsNotNone(self.dog.fell_back)
-        self.dog.reset(200)
-        self.assertIsNone(self.dog.fell_back)
-
-
 class OtherTest(unittest.TestCase):
-    def test_wifi_power_saving_off(self):
-        """Power saving makes the Pi miss the first request after a quiet spell."""
-        fake = FakeNmcli(devices=("wlan0", "wlan1"))
-        manager(fake, mode="dual", uplinks=[CHURCH]).apply()
-        self.assertEqual(fake.props[AP_CON]["802-11-wireless.powersave"], "2")
-        self.assertEqual(fake.props[UPLINK_CON]["802-11-wireless.powersave"], "2")
-
     def test_status(self):
         fake = FakeNmcli(devices=("wlan0", "wlan1"))
-        m = manager(fake, mode="dual", uplinks=[CHURCH])
+        m = manager(fake, uplinks=[CHURCH])
         m.apply()
         s = m.status()
-        self.assertTrue(s["ap_active"])
-        self.assertTrue(s["uplink_active"])
-        self.assertEqual(s["connected_ssid"], "Church")
-        self.assertEqual(s["dongle"], "wlan1")
-        self.assertEqual(s["uplinks"], ["Church"])
+        self.assertEqual((s["plan"], s["online"], s["ap_active"]), ("dongle", True, True))
+        self.assertEqual((s["dongle"], s["connected_ssid"]), ("wlan1", "Church"))
         self.assertNotIn("secret99", str(s))
 
     def test_connected_ssid_escapes(self):
         fake = FakeNmcli()
         fake.os_wifi["wlan0"] = "St Mary\\:guest"  # nmcli escapes ':' in terse output
         self.assertEqual(manager(fake).connected_ssid("wlan0"), "St Mary:guest")
-        self.assertIsNone(manager(FakeNmcli()).connected_ssid("wlan0"))
 
     def test_uplink_profile_names(self):
         self.assertTrue(is_uplink_con("tower-uplink"))

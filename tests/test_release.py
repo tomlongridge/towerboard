@@ -215,6 +215,13 @@ class ActivateTest(unittest.TestCase):
         last = self.mgr.last_result()
         self.assertEqual((last["result"], last["version"], last["from"]), ("failed", "2.0.0", "1.1.0"))
 
+    def test_failed_version_is_remembered(self):
+        self.install("1.0.0")
+        self.install("1.1.0", health=lambda v: (v != "1.1.0", "boom"))
+        self.assertEqual(self.mgr.failed_versions(), {"1.1.0"})
+        self.install("1.2.0")
+        self.assertEqual(self.mgr.failed_versions(), {"1.1.0"})
+
     def test_restart_failure_is_a_failed_update(self):
         self.install("1.0.0")
 

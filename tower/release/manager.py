@@ -32,6 +32,7 @@ from tower.fsutil import atomic_write, fsync_dir
 log = logging.getLogger(__name__)
 
 STATUS_FILE = "update-status.json"
+FAILED_FILE = "update-failed.json"  # versions that failed their health check here
 
 Restart = Callable[[], None]
 # Given the version that should now be running, returns (healthy, detail).
@@ -81,6 +82,17 @@ class ReleaseManager:
             p.name for p in self.releases.iterdir()
             if p.is_dir() and not p.name.endswith(".staging") and not p.name.startswith(".")
         )
+
+    def failed_versions(self) -> set[str]:
+        """Versions that failed their health check on this Pi: never offered again."""
+        try:
+            return set(json.loads((self.state / FAILED_FILE).read_text()))
+        except (FileNotFoundError, ValueError, TypeError):
+            return set()
+
+    def _remember_failed(self, version: str) -> None:
+        failed = sorted(self.failed_versions() | {version})
+        atomic_write(self.state / FAILED_FILE, json.dumps(failed, indent=2) + "\n")
 
     def last_result(self) -> dict | None:
         try:
@@ -147,6 +159,7 @@ class ReleaseManager:
             return self._record(Result(True, "activate", version, old, detail))
 
         log.error("%s failed health check (%s); rolling back to %s", version, detail, old)
+        self._remember_failed(version)
         if old is None:
             return self._record(Result(False, "activate", version, None,
                                        f"health check failed: {detail}; no previous release"))

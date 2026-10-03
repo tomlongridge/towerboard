@@ -437,7 +437,7 @@ This reverses an earlier draft of this design, which made a steward the courier:
 6. Health check: units active, HTTP responds, audio device opens, sensor source opens or reports absent-but-expected. Configurable grace period.
 7. On health check failure, repoint `current` to `previous`, restart, and record the failure for display in the admin page.
 
-**Release source: GitHub Releases.** _Planned; not built yet._
+**Release source: GitHub Releases.** _Built in M2b_ (`tower.release.github`, `tower.updates`, `scripts/publish-release.sh`).
 
 - **What is published.** Each GitHub release has the signed `.tower` bundle attached as an asset. The bundle replaces the "ZIP of source and methods XML" sketched in requirements.md; the methods library goes inside it.
 - **Trust stays with the signature.** GitHub and HTTPS are only the transport. A bundle is applied only if it verifies against `/etc/tower/allowed_signers`, exactly as an uploaded one does, so a compromised GitHub account cannot push code to towers without the signing key.
@@ -450,7 +450,7 @@ This reverses an earlier draft of this design, which made a steward the courier:
 
 **Manual upload stays** as the fallback for a tower with no internet at all, and for development (`scripts/deploy-dev.sh`).
 
-**Development loop.** The dev rsync loop deploys _into the release tooling path_, i.e. builds a release and applies it, rather than rsyncing over a live tree. Otherwise the update mechanism is exercised only at release time, breaks silently, and is discovered in a tower.
+**Development loop.** The dev rsync loop deploys _into the release tooling path_, i.e. builds a release and applies it, rather than rsyncing over a live tree. Otherwise the update mechanism is exercised only at release time, breaks silently, and is discovered in a tower. `make deploy` does this. The one deliberate exception is `make hot`: development only, for trying small changes in seconds, it copies changed files over the installed release and restarts. It is never the only way a change reaches a Pi, and it marks the release (`.hot.<time>` in the version) so a hot-patched Pi is obvious; the next real deploy or update replaces it.
 
 **Versioning.** Semantic version plus git SHA, visible in the admin page and in every session header.
 
@@ -477,7 +477,7 @@ In cases 1 and 2 the Pi is online all the time: it checks for updates at start-u
 
 The Pi never finishes a check without its AP. Known risk: an iPhone's Personal Hotspot is only visible to new devices while its settings screen is open, so a steward using one must have it open when the check starts; the *Check for updates* button lets them start it at the right moment.
 
-**Status.** _Built (M1–M2) and to be replaced in M2b:_ an admin-chosen mode (`ap`, `joined`, `dual`); `joined` makes the Pi a client of the tower's WiFi with no AP, which this design drops. Already built and carried over: the known-networks list, cable detection, the dongle, internet sharing, WiFi power saving off, and never leaving the Pi unreachable.
+**Status.** _Built in M2b_ (`tower.net`, `tower.updates`), replacing the admin-chosen modes (`ap`, `joined`, `dual`) of M1–M2. A `network.mode` left in an older tower's settings is ignored with a warning.
 
 **Implementation.** NetworkManager profiles created and switched by the app; no hand-rolled `hostapd`/`dnsmasq` stack. Changes to the known networks and AP settings are admin-PIN-scoped and survive reboot.
 
@@ -546,7 +546,7 @@ _Exit:_ a band rings on tied bells and it sounds right. Measured jitter under 10
 
 ### M2b — Updates from GitHub
 
-_Proposed next, so towers in the field update themselves before more features ship._ Publish signed bundles as GitHub release assets from CI or a release script. On the Pi: discovery, background download and verification, staging, *Apply* on the admin page, remembered failures, the NTP wait. Replace the network modes with behaviour chosen from the hardware (C16), including the single-radio update check and the wall display's update message. *Check for updates* on the admin page.
+_Built._ Publish signed bundles as GitHub release assets from CI or a release script. On the Pi: discovery, background download and verification, staging, *Apply* on the admin page, remembered failures, the NTP wait. Replace the network modes with behaviour chosen from the hardware (C16), including the single-radio update check and the wall display's update message. *Check for updates* on the admin page.
 
 _Exit:_ publish a release on GitHub; a desk Pi on a cable finds it, downloads it and offers it; an admin applies it. A single-radio Pi with a phone hotspot as a known network does the same in its start-up check, and is back on its AP afterwards. Plugging in or removing a cable or dongle changes the behaviour without a restart. A deliberately broken release rolls back and is not offered again.
 

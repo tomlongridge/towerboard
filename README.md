@@ -72,7 +72,7 @@ echo "tower-release $(cat ~/.ssh/tower-release.pub)" > ~/tower-allowed_signers
 4. When asked whether to **customise settings**, choose to edit them:
    * **Hostname:** `towerboard`
    * **Username and password:** username `ringer`, and a password you'll remember.
-   * **Wireless LAN:** leave this **off** if you'll use an Ethernet cable (recommended). If you have no way to use a cable, fill in your home WiFi here and see *No Ethernet cable?* in step 14.
+   * **Wireless LAN:** leave this **off** if you'll use an Ethernet cable (recommended). If you have no way to use a cable, fill in your home WiFi here and see *No Ethernet cable?* after step 14.
    * **Locale:** your time zone and keyboard.
    * **Services:** turn on **SSH**, with **password authentication**.
 5. Save, then write the card. It takes a few minutes.
@@ -147,15 +147,7 @@ Then copy the newest release in `dist`, with the other two files:
 scp "$(ls -t dist/*.tower | head -1)" ~/tower-allowed_signers deploy/install.sh ringer@towerboard.local:~
 ```
 
-> **No Ethernet cable?** Towerboard normally turns the Pi's WiFi into its own network for ringers' phones. If the Pi is on your home WiFi, that would cut you off halfway through. Tell Towerboard to stay on your WiFi for now: log in to the Pi (step 8), then run this with your WiFi name and password in place of the capitals:
->
-> ```bash
-> sudo mkdir -p /etc/tower && printf '[network]\nmode = "joined"\nuplink_ssid = "YOUR-WIFI-NAME"\nuplink_psk = "YOUR-WIFI-PASSWORD"\n' | sudo tee /etc/tower/tower.toml
-> ```
->
-> If your WiFi isn't available when the Pi starts, or drops out for more than a minute and a half, the Pi gives up and runs its own `towerboard` network until it's restarted, so you can always reach it. You can add more networks it may join (for example the tower's own WiFi) on the admin page.
->
-> Later, when the Pi goes to the tower, switch it to *Access point only* on the admin page.
+> **No Ethernet cable?** Towerboard always turns the Pi's WiFi into its own network for ringers' phones, so once it starts, the Pi leaves your home WiFi and your Mac loses touch with it. That's expected. In step 15, run the installer as `sudo TOWER_ALLOW_AP_TAKEOVER=1 sh install.sh tower-*.tower tower-allowed_signers` instead. When it disconnects, join the WiFi network `towerboard` (password `bellringing`) on your Mac, and use `http://10.42.0.1/` wherever this guide says `http://towerboard.local/` (and `ringer@10.42.0.1` for SSH). While your Mac is on the Pi's network it has no internet; switch back to your own WiFi when you're done.
 
 ### Part E: install (on the Pi)
 
@@ -187,9 +179,11 @@ All three should say `active (running)`.
 
 **18. Set the admin PIN.** Click **Admin** and choose a PIN of 4 to 12 digits. The first person to open the admin page sets it, so do this straight away. If you ever forget it, ask for help resetting it.
 
-**19. Name your WiFi network.** Out of the box, the Pi makes a WiFi network called `towerboard` with the password `bellringing`. Change both in **Admin → Network**, and keep *Access point only* selected. Leave *Let phones … use the Pi's internet connection* unticked unless you want ringers' phones to use the Pi's internet (if it has one, through a network cable); unticked, they keep using their own mobile data. Ringers' phones join this network, then open `http://10.42.0.1/` (or scan the QR codes on the home page).
+**19. Name your WiFi network.** Out of the box, the Pi makes a WiFi network called `towerboard` with the password `bellringing`. Change both in **Admin → Network**. Leave *Let phones … use the Pi's internet connection* unticked unless you want ringers' phones to use the Pi's internet (if it has one, through a network cable); unticked, they keep using their own mobile data. Ringers' phones join this network, then open `http://10.42.0.1/` (or scan the QR codes on the home page).
 
-**20. Set up sound.** Log in to the Pi (step 8) and list its sound outputs:
+**20. Let the Pi reach the internet for updates.** Towerboard fetches new versions from GitHub by itself. With a network cable plugged in, it uses that and there's nothing to do. Otherwise, add a WiFi network it may use under **Admin → Network → Known WiFi networks**: the tower's WiFi, your home WiFi, or a phone hotspot. If the Pi has only its built-in WiFi, it joins that network briefly when it starts and when you press *Check for updates*. While it's online, the Towerboard WiFi is off for a few minutes and the belfry screen says so. With no known networks and no cable, the Pi never goes online.
+
+**21. Set up sound.** Log in to the Pi (step 8) and list its sound outputs:
 
 ```bash
 aplay -l
@@ -203,19 +197,19 @@ printf '\n[audio]\ndevice = "plughw:CARD=Headphones"\n' | sudo tee -a /etc/tower
 
 (For USB speakers, use the name after `card 1:` from `aplay -l` in place of `Headphones`.) Then in **Admin → Calibration**, press **Ring** next to a bell. You should hear it.
 
-**21. Connect the bell sensors.** Plug the sensor box into a USB socket on the Pi, then open **Diagnostics**. Under *source*, the status should say `open`.
+**22. Connect the bell sensors.** Plug the sensor box into a USB socket on the Pi, then open **Diagnostics**. Under *source*, the status should say `open`.
 
-**22. Check the belfry screen.** The monitor should show Towerboard full screen: the QR codes when the bells are quiet, and the bells lighting up as they ring. It starts by itself whenever the Pi is switched on, and refreshes itself after an update. If it's blank, see *If something goes wrong*.
+**23. Check the belfry screen.** The monitor should show Towerboard full screen: the QR codes when the bells are quiet, and the bells lighting up as they ring. It starts by itself whenever the Pi is switched on, and refreshes itself after an update. If it's blank, see *If something goes wrong*.
 
 ### Updating Towerboard later
 
-You don't need Terminal on the Pi for updates:
+New versions arrive by themselves, from GitHub:
 
-1. On your Mac, repeat step 13 to build the new release.
-2. Open **Admin** in your browser and, under **Software**, choose the new `.tower` file from `~/towerboard/dist` and press **Upload and apply**.
-3. The Pi checks the signature, installs the update and restarts. If the new version doesn't start properly, it goes back to the previous one by itself, and the admin page tells you.
+1. The Pi checks when it starts, then daily if it has a cable or USB WiFi dongle. With only its built-in WiFi, it checks when it starts and when you press **Check for updates** under **Admin → Software** (wait until the bells are quiet: it does).
+2. When a new version has been downloaded and checked, the same page shows **Version … is ready to install**, with what's new. Nothing changes until you press **Apply update**.
+3. The Pi installs it and restarts. If the new version doesn't start properly, it goes back to the previous one by itself, says so on the admin page, and won't offer that version again.
 
-You can also carry the `.tower` file on your phone and upload it the same way from the tower.
+For a Pi that never goes online, open **Install from a file instead** on the same page and upload a `.tower` release file (download it from the project's GitHub releases page).
 
 ### If something goes wrong
 
