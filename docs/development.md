@@ -116,6 +116,8 @@ make release
 
 It refuses unless the tree is clean, `main` matches GitHub, the tests pass and the version isn't already published. It builds and signs the bundle on your Mac (the signing key never goes to GitHub), checks it as a tower would, tags the commit `v<version>`, and creates the GitHub release with the bundle attached. Towers find it at their next check and offer it on the admin page; nothing is applied until an admin presses *Apply*. A version with a `-` (e.g. `0.5.0-rc.1`) is published as a pre-release, offered only to towers with `update.channel = "pre"`.
 
+For a fix release, `make patch-release` does the bump for you: it runs the same checks and the tests, asks you to confirm (e.g. "Bump 0.4.0 → 0.4.1"), commits "Release v0.4.1" and pushes it, then publishes. If publishing fails after the push, no tag or release has been created: fix the problem and run `make release`. It only bumps plain `X.Y.Z` versions; for anything else, set `__version__` by hand and use `make release`.
+
 **During development**, deploy straight to your desk Pi without publishing: upload the bundle on the admin page, or from the Mac:
 
 ```bash

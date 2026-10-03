@@ -27,8 +27,10 @@ if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || gh release view "$TA
   fail "$TAG is already published: bump __version__ in tower/__init__.py"
 fi
 
-echo "running the tests…"
-uv run python -m unittest discover -s tests >/dev/null 2>&1 || fail "the tests fail: run make test"
+if [ "${TOWER_SKIP_TESTS:-0}" != 1 ]; then  # set by patch-release.sh, which has just run them
+  echo "running the tests…"
+  uv run python -m unittest discover -s tests >/dev/null 2>&1 || fail "the tests fail: run make test"
+fi
 
 BUNDLE=$(uv run python -m tower.release build --key "$KEY" --out dist | tail -1)
 case "$(basename "$BUNDLE")" in
@@ -53,7 +55,9 @@ PY
 PRE=""
 case "$VERSION" in *-*) PRE="--prerelease" ;; esac
 
-git tag -a "$TAG" -m "Towerboard $VERSION"
-git push -q origin "$TAG"
-gh release create "$TAG" "$BUNDLE" --title "Towerboard $VERSION" --generate-notes --verify-tag $PRE
+# GitHub creates the tag together with the release, so a failure here leaves
+# no tag behind and `make release` can simply be run again.
+gh release create "$TAG" "$BUNDLE" --target "$(git rev-parse HEAD)" \
+  --title "Towerboard $VERSION" --generate-notes $PRE
+git fetch -q origin --tags
 echo "published $TAG: towers will offer it at their next check"

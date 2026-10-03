@@ -10,10 +10,10 @@ KEY ?= $(HOME)/.ssh/tower-release
 PI_HOST = $(lastword $(subst @, ,$(PI)))
 
 .DEFAULT_GOAL := help
-.PHONY: help setup test serve rt render build release deploy hot watch hot-setup hot-teardown status logs reboot ssh ssh-key
+.PHONY: help setup test serve rt render build release patch-release deploy hot watch hot-setup hot-teardown status logs reboot ssh ssh-key
 
 help: ## List the tasks
-	@grep -E '^[a-z-]+:.*## ' $(firstword $(MAKEFILE_LIST)) | sed -E 's/^([^:]+):.*## /  make \1\t/' | expand -t 20
+	@grep -E '^[a-z-]+:.*## ' $(firstword $(MAKEFILE_LIST)) | awk -F ':.*## ' '{printf "  make %-14s %s\n", $$1, $$2}'
 	@echo "  Pi: $(PI)"
 
 setup: ## Install Python and dependencies for development
@@ -36,6 +36,9 @@ build: ## Build a signed release into dist/
 
 release: ## Publish the version in tower/__init__.py on GitHub, for towers to update from
 	TOWER_SIGNING_KEY=$(KEY) scripts/publish-release.sh
+
+patch-release: ## Bump the patch version (e.g. 0.4.0 → 0.4.1), commit and push it, then publish
+	TOWER_SIGNING_KEY=$(KEY) scripts/patch-release.sh
 
 deploy: test ## Test, build, install on the Pi and wait for its health check
 	TOWER_SIGNING_KEY=$(KEY) scripts/deploy-dev.sh $(PI)
