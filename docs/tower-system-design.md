@@ -477,7 +477,7 @@ The USB WiFi dongle is optional in every mode. Absence degrades capability, neve
 - Hardware-in-the-loop tests (audio jitter, serial decode, update apply) run on the desk Pi and gate releases.
 - **No Mac shims** for systemd, ALSA, NetworkManager, or photohead timing. Those components are exercised on the Pi. Faking them on the Mac produces tests that pass while the real thing is broken.
 
-**CI.** GitHub Actions on `ubuntu-24.04-arm` for native arm64 runs, no emulation. Lima VM or `debian:bookworm-slim` under Docker for local aarch64 parity on Apple Silicon.
+**CI.** GitHub Actions on `ubuntu-24.04-arm` for native arm64 runs, no emulation. Lima VM or `debian:trixie-slim` under Docker for local aarch64 parity on Apple Silicon.
 
 **Python and packaging.** Python version pinned to the Pi's shipped interpreter with `uv python pin`. Venv built on-Pi and excluded from rsync. The app runs as `python -m tower`, never as a path-invoked script.
 
@@ -485,7 +485,7 @@ The USB WiFi dongle is optional in every mode. Absence degrades capability, neve
 
 - `segno` (M1): QR codes for the AP join and app URL. Pure Python, vendored into releases.
 - `pyserial` (M2): the photohead box. Pure Python, vendored into releases.
-- `numpy` (M2): mixing, sample decoding and the synthetic bells. Summing a dozen ringing voices every 6 ms in pure Python costs most of a Pi core. C extension: comes from Debian (`python3-numpy`, 1.24 on Bookworm, pinned to match in development), never vendored.
+- `numpy` (M2): mixing, sample decoding and the synthetic bells. Summing a dozen ringing voices every 6 ms in pure Python costs most of a Pi core. C extension: comes from Debian (`python3-numpy`, 2.2 on Trixie, pinned to match in development), never vendored.
 - `pyalsaaudio` (M2): ALSA output, open question 3 resolved as suggested. From Debian (`python3-alsaaudio`); not installed on the Mac, where audio reports itself unavailable.
 
 **Licensing.** `pibells` is GPL and is being reimplemented rather than forked, deliberately. Do not paste from it.
@@ -591,3 +591,7 @@ Flagging these so they can be overruled rather than silently inherited:
 - **Wall-clock trust (open question 5):** NTP if systemd says synchronised; otherwise the first admin connection sends the phone's time, kept as an offset tied to the boot id rather than written to the system clock (that needs root and fights timesyncd). Diagnostics show the source; M3 session headers will record it.
 - **The synthetic source's "sensor" fires 100 ms before its strike**, as a real photohead does, so the scheduler has lead time.
 - **Unit files, Debian packages, udev and polkit rules are installed only by `install.sh`.** An update cannot add them, so M1 → M2 needs one re-run of the installer. Shipping these through the update pipeline needs a privileged helper; deferred.
+
+### Target OS: Raspberry Pi OS Trixie
+
+The target moved from Bookworm to Trixie (Debian 13): Python 3.13 and numpy 2.2 from Debian. `.python-version` and the numpy pin follow, so development and CI test what the Pi runs.
