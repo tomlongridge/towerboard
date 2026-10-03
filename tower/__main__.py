@@ -1,6 +1,8 @@
 """Entry point: ``python -m tower``.
 
     python -m tower serve [--dev]          application process: web app and admin
+    python -m tower rt [--dev]             real-time process: sensor → strike → audio
+    python -m tower rt-jitter --capture …  audio timing gate (desk Pi, loopback cable)
     python -m tower --source=synthetic     pulse pipeline, envelopes to stdout
 """
 
@@ -15,28 +17,15 @@ from typing import Sequence
 from tower import config, pipeline, version
 from tower.clock import Clock, FakeClock, SystemClock
 from tower.events import SCHEMA_VERSION
-from tower.rt.source import PulseSource, SyntheticParams, SyntheticSource
+from tower.rt.source import PulseSource
 
 log = logging.getLogger("tower")
 
 
-def build_source(cfg: config.Config, clock: Clock) -> PulseSource:
-    if cfg.source.kind == "synthetic":
-        s = cfg.synthetic
-        return SyntheticSource(
-            SyntheticParams(
-                bells=s.bells,
-                gap=s.gap_ms / 1000,
-                uplift=s.uplift_ms / 1000,
-                error_sd=s.error_ms / 1000,
-                latency=s.latency_ms / 1000,
-                jitter=s.jitter_ms / 1000,
-                rows=s.rows or None,
-                seed=s.seed,
-            ),
-            clock,
-        )
-    raise config.ConfigError(f"source {cfg.source.kind!r} is not implemented")
+def build_source(cfg: config.Config, clock: Clock) -> tuple[PulseSource, str]:
+    from tower.rt.main import build_source as rt_build_source
+
+    return rt_build_source(cfg, cfg.source.kind, clock)
 
 
 def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
@@ -65,6 +54,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         from tower import app
 
         return app.main(argv[1:])
+    if argv[:1] == ["rt"]:
+        from tower.rt import main as rt
+
+        return rt.main(argv[1:])
+    if argv[:1] == ["rt-jitter"]:
+        from tower.rt import jitter
+
+        return jitter.main(argv[1:])
     return run_pipeline(argv)
 
 
@@ -83,14 +80,14 @@ def run_pipeline(argv: Sequence[str]) -> int:
         cfg = config.load(tower_path=args.config, overrides_path=args.overrides, cli=cli)
         logging.getLogger().setLevel(cfg.log.level.upper())
         clock: Clock = FakeClock() if args.fast else SystemClock()
-        source = build_source(cfg, clock)
+        source, source_name = build_source(cfg, clock)
     except (config.ConfigError, ValueError) as e:
         log.error("%s", e)
         return 2
 
     log.info("tower %s: %s, source=%s", version.full_version(), cfg.tower.name, cfg.source.kind)
     try:
-        n = pipeline.run(source, sys.stdout, cfg.source.kind)
+        n = pipeline.run(source, sys.stdout, source_name)
     except KeyboardInterrupt:
         return 130
     except BrokenPipeError:

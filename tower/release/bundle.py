@@ -41,7 +41,7 @@ MANIFEST_SCHEMA = 1
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.+-]+)?$")
 
 # Pure-Python runtime dependencies copied into vendor/. Keep in step with pyproject.toml.
-VENDOR = ("segno",)
+VENDOR = ("segno", "serial")  # pyserial imports as `serial`
 MAX_PAYLOAD_BYTES = 200 * 1024 * 1024
 
 

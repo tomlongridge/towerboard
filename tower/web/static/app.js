@@ -89,7 +89,18 @@ async function loadAdmin() {
     $("pin").autocomplete = first ? "new-password" : "current-password";
     return;
   }
-  await Promise.all([loadReleases(), loadNetwork()]);
+  await Promise.all([loadReleases(), loadNetwork(), loadAudio(), offerTime()]);
+}
+
+// Without NTP or an RTC the Pi's date may be wrong; an admin's phone is the best clock
+// in the tower (design C16). Offered automatically on admin connection.
+async function offerTime() {
+  try {
+    const d = await api("/api/diagnostics");
+    if (d.wall_clock && d.wall_clock.source === "none") {
+      await api("/api/admin/time", { method: "POST", body: { epoch_ms: Date.now() } });
+    }
+  } catch (_) { /* best effort */ }
 }
 
 function describeResult(r) {
@@ -254,9 +265,189 @@ $("net-form").addEventListener("submit", async (ev) => {
 
 $("diag-refresh").addEventListener("click", loadDiagnostics);
 
+// --- live ringing --------------------------------------------------------------
+
+const IDLE_AFTER_MS = 30000; // README: ringing view until a 30 s pause
+const bellEls = new Map();
+let lastStrikeAt = 0;
+// Server monotonic t → this page's clock. Only events stamped at send time
+// (heartbeat, state) qualify; strikes carry their future strike time.
+const offsets = [];
+
+function noteServerTime(t) {
+  offsets.push(performance.now() / 1000 - t);
+  if (offsets.length > 30) offsets.shift();
+}
+
+function serverToLocalMs(t) {
+  if (!offsets.length) return performance.now();
+  return (t + Math.min(...offsets)) * 1000;
+}
+
+function bellEl(n) {
+  if (!bellEls.has(n)) {
+    const el = document.createElement("div");
+    el.className = "bell";
+    el.textContent = n;
+    el.dataset.bell = n;
+    bellEls.set(n, el);
+    const sorted = [...bellEls.keys()].sort((a, b) => a - b);
+    $("bells").replaceChildren(...sorted.map((k) => bellEls.get(k)));
+  }
+  return bellEls.get(n);
+}
+
+function onStrike(p, t) {
+  const delay = Math.max(0, serverToLocalMs(t) - performance.now());
+  setTimeout(() => {
+    const el = bellEl(p.bell);
+    el.classList.remove("hand", "back");
+    el.classList.add(p.stroke, "flash");
+    setTimeout(() => el.classList.remove("flash"), 120);
+    lastStrikeAt = Date.now();
+    showRinging(true);
+  }, delay);
+}
+
+function showRinging(on) {
+  $("ringing").hidden = !on;
+  $("idle").hidden = on;
+}
+
+setInterval(() => {
+  if (lastStrikeAt && Date.now() - lastStrikeAt > IDLE_AFTER_MS) showRinging(false);
+}, 1000);
+
+function connectEvents() {
+  const es = new EventSource("/api/events");
+  es.onmessage = (msg) => {
+    let env;
+    try { env = JSON.parse(msg.data); } catch (_) { return; }
+    if (env.type === "system" || env.type === "state") noteServerTime(env.t);
+    if (env.type === "strike") onStrike(env.payload, env.t);
+    if (env.type === "state" && env.payload.strokes_reset) {
+      for (const el of bellEls.values()) el.classList.remove("hand", "back");
+    }
+  };
+  // EventSource reconnects by itself; the server sends a fresh state snapshot each time.
+}
+
+$("reset-strokes").addEventListener("click", () => api("/api/strokes/reset", { method: "POST" }).catch(() => {}));
+
+// --- admin: sound and calibration ---------------------------------------------------
+
+let calibration = {};
+
+async function loadAudio() {
+  const a = await api("/api/admin/audio");
+  const sel = $("pack-select");
+  sel.replaceChildren(...a.packs.map((p) => {
+    const o = document.createElement("option");
+    o.value = p.id;
+    o.textContent = p.name;
+    o.selected = p.id === a.active;
+    return o;
+  }));
+  $("volume").value = a.volume_db;
+  $("volume-value").textContent = a.volume_db;
+  calibration = a.calibration_ms;
+  const rt = a.rt;
+  $("audio-status").textContent = !rt ? "The sound engine is not reporting."
+    : rt.audio.status === "ok" ? `Playing on ${rt.audio.device}. ${rt.audio.late} late strikes, ${rt.audio.steals} voice steals.`
+    : `Sound unavailable: ${rt.audio.detail}`;
+  try { $("cal-bells").value = localStorage.getItem("calBells") || 8; } catch (_) { /* private mode */ }
+  renderCalibration();
+}
+
+function renderCalibration() {
+  const n = Math.max(2, Math.min(16, Number($("cal-bells").value) || 8));
+  const table = $("cal-table");
+  table.replaceChildren();
+  const hr = table.insertRow();
+  for (const h of ["Bell", "Handstroke", "Backstroke", ""]) {
+    const th = document.createElement("th");
+    th.textContent = h;
+    hr.appendChild(th);
+  }
+  for (let bell = 1; bell <= n; bell++) {
+    const tr = table.insertRow();
+    tr.insertCell().textContent = bell;
+    for (const stroke of ["hand", "back"]) {
+      const td = tr.insertCell();
+      const ms = document.createElement("span");
+      ms.className = "ms";
+      ms.textContent = `${((calibration[bell] || {})[stroke] || 0).toFixed(0)} ms`;
+      const nudge = (steps, label) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "secondary";
+        b.textContent = label;
+        b.setAttribute("aria-label", `${label === "−" ? "Earlier" : "Later"} ${stroke}stroke, bell ${bell}`);
+        b.onclick = async () => {
+          try {
+            const r = await api("/api/admin/calibration", { method: "POST", body: { bell, stroke, steps } });
+            calibration[bell] = { ...(calibration[bell] || {}), [stroke]: r.ms };
+            ms.textContent = `${r.ms.toFixed(0)} ms`;
+            $("cal-result").textContent = r.applied ? "" : "Saved; the sound engine is not running, it will pick this up when it starts.";
+          } catch (e) { $("cal-result").textContent = e.message; }
+        };
+        return b;
+      };
+      td.append(nudge(-1, "−"), ms, nudge(1, "+"));
+    }
+    const ring = document.createElement("button");
+    ring.type = "button";
+    ring.className = "secondary";
+    ring.textContent = "Ring";
+    ring.onclick = () => api("/api/admin/test-strike", { method: "POST", body: { bell } }).catch((e) => {
+      $("cal-result").textContent = e.message;
+    });
+    tr.insertCell().appendChild(ring);
+  }
+}
+
+$("cal-bells").addEventListener("change", () => {
+  try { localStorage.setItem("calBells", $("cal-bells").value); } catch (_) { /* private mode */ }
+  renderCalibration();
+});
+
+$("pack-select").addEventListener("change", async () => {
+  try {
+    await api("/api/admin/soundpack/select", { method: "POST", body: { id: $("pack-select").value } });
+    $("pack-result").textContent = "Sound pack changed.";
+  } catch (e) { $("pack-result").textContent = e.message; }
+});
+
+let volumeTimer;
+$("volume").addEventListener("input", () => {
+  $("volume-value").textContent = $("volume").value;
+  clearTimeout(volumeTimer);
+  volumeTimer = setTimeout(() => api("/api/admin/volume", { method: "POST", body: { db: Number($("volume").value) } })
+    .catch((e) => { $("pack-result").textContent = e.message; }), 150);
+});
+
+$("pack-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const file = $("pack-file").files[0];
+  if (!file) return;
+  $("pack-result").textContent = `Uploading ${file.name}…`;
+  try {
+    const resp = await fetch("/api/admin/soundpack", {
+      method: "POST",
+      headers: { "X-Tower-Request": "1", "Content-Type": "application/zip" },
+      body: file,
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+    $("pack-result").textContent = `Installed ${data.installed.name} (${data.installed.bells.length} bells). Select it above to use it.`;
+    loadAudio();
+  } catch (e) { $("pack-result").textContent = `Upload failed: ${e.message}`; }
+});
+
 // --- start -------------------------------------------------------------------
 
 if (wall) document.body.classList.add("wall");
 window.addEventListener("hashchange", route);
 loadInfo().catch(() => {});
+connectEvents();
 route();

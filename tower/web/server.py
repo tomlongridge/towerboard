@@ -79,6 +79,9 @@ class Response:
     body: bytes = b""
     content_type: str = "text/plain; charset=utf-8"
     headers: list[tuple[str, str]] = field(default_factory=list)
+    # Set for a long-lived response (SSE): called with a write function after the
+    # headers, and the connection closes when it returns.
+    stream: Callable[[Callable[[bytes], None]], None] | None = None
 
 
 def json_response(obj: Any, status: int = 200, headers: list[tuple[str, str]] | None = None) -> Response:
@@ -125,6 +128,9 @@ def make_server(routes: Routes, host: str, port: int, static_dir: Path = STATIC_
             self._send(resp)
 
         def _send(self, resp: Response) -> None:
+            if resp.stream is not None:
+                self._send_stream(resp)
+                return
             self.send_response(resp.status)
             self.send_header("Content-Type", resp.content_type)
             self.send_header("Content-Length", str(len(resp.body)))
@@ -137,6 +143,23 @@ def make_server(routes: Routes, host: str, port: int, static_dir: Path = STATIC_
                 self.close_connection = True
             self.end_headers()
             self.wfile.write(resp.body)
+
+        def _send_stream(self, resp: Response) -> None:
+            self.send_response(resp.status)
+            self.send_header("Content-Type", resp.content_type)
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "close")
+            for k, v in resp.headers:
+                self.send_header(k, v)
+            self.end_headers()
+            self.close_connection = True
+
+            def write(data: bytes) -> None:
+                self.wfile.write(data)
+                self.wfile.flush()
+
+            assert resp.stream is not None
+            resp.stream(write)
 
         def log_message(self, format: str, *args: Any) -> None:
             log.debug("%s %s", self.address_string(), format % args)

@@ -19,8 +19,15 @@
 
   <main>
     <section id="view-home" class="view">
+      <div id="ringing" hidden>
+        <div class="bells" id="bells" aria-live="off"></div>
+        <p class="muted ringing-foot"><span class="swatch hand"></span> handstroke
+          <span class="swatch back"></span> backstroke
+          <button type="button" id="reset-strokes" class="secondary small">Reset to handstroke</button></p>
+      </div>
+      <div id="idle">
       <h1 id="home-title">Towerboard</h1>
-      <p class="lede">Ringing display, simulator and strike analysis arrive in later releases.</p>
+      <p class="lede">Striking analysis and the simulator arrive in later releases.</p>
       <div class="join">
         <figure>
           <img src="/qr/wifi.svg" alt="QR code to join the tower WiFi" width="220" height="220">
@@ -30,6 +37,7 @@
           <img src="/qr/app.svg" alt="QR code to open this app" width="220" height="220">
           <figcaption>2. Open <strong id="app-url"></strong></figcaption>
         </figure>
+      </div>
       </div>
     </section>
 
@@ -88,6 +96,27 @@
             <button type="submit">Save and apply</button>
           </form>
           <p id="net-result" role="status"></p>
+        </div>
+
+        <div class="card">
+          <h2>Sound</h2>
+          <p id="audio-status" class="muted"></p>
+          <label>Sound pack <select id="pack-select"></select></label>
+          <label>Volume <span id="volume-value"></span> dB
+            <input type="range" id="volume" min="-40" max="6" step="1"></label>
+          <form id="pack-form">
+            <label>Install a sound pack (.zip with manifest.toml) <input type="file" id="pack-file" accept=".zip" required></label>
+            <button type="submit">Upload</button>
+          </form>
+          <p id="pack-result" role="status"></p>
+        </div>
+
+        <div class="card">
+          <h2>Calibration</h2>
+          <p class="muted">Ring open with the bells sounding, and nudge each bell until the sound lands with the real bell. Positive is later. Steps are 5 ms.</p>
+          <label class="inline">Bells <input type="number" id="cal-bells" min="2" max="16" value="8"></label>
+          <table class="cal" id="cal-table"></table>
+          <p id="cal-result" role="status"></p>
         </div>
 
         <div class="card">

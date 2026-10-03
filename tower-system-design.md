@@ -484,6 +484,9 @@ The USB WiFi dongle is optional in every mode. Absence degrades capability, neve
 **Dependency posture.** Stdlib-only where it is possible without contortion. Current accepted exceptions: `pyserial`, `segno`, and one audio binding. Each exception needs a reason recorded here.
 
 - `segno` (M1): QR codes for the AP join and app URL. Pure Python, vendored into releases.
+- `pyserial` (M2): the photohead box. Pure Python, vendored into releases.
+- `numpy` (M2): mixing, sample decoding and the synthetic bells. Summing a dozen ringing voices every 6 ms in pure Python costs most of a Pi core. C extension: comes from Debian (`python3-numpy`, 1.24 on Bookworm, pinned to match in development), never vendored.
+- `pyalsaaudio` (M2): ALSA output, open question 3 resolved as suggested. From Debian (`python3-alsaaudio`); not installed on the Mac, where audio reports itself unavailable.
 
 **Licensing.** `pibells` is GPL and is being reimplemented rather than forked, deliberately. Do not paste from it.
 
@@ -573,3 +576,18 @@ Flagging these so they can be overruled rather than silently inherited:
 - **Diagnostics are public (no PIN).** The person reading them down a phone line may not have the PIN; they contain no secrets.
 - **CSRF protection is a required `X-Tower-Request` header on every POST**, plus `SameSite=Strict` session cookies. No tokens to manage.
 - **A failed join always falls back to the AP.** A mistyped tower WiFi passphrase in `joined` mode must not lock everyone out. On startup the app only reapplies the network mode if it is not already in effect, so updates do not drop ringers off the AP.
+
+### Calls made while implementing M2
+
+- **Serial protocol assumed to be one character per pulse, no timestamp**: the ringers' symbols `1234567890ETABCD` for bells 1–16, decoded from raw bytes and ignoring case (the bells 11 and 12 fix). The character map is configurable. Because the box sends no MCU timestamp, `t_src` is the receipt time, back-dated by one character time (4.2 ms at 2400 baud) for each byte that arrives in the same read. Clock discipline is implemented as designed and is the identity for this source. **To verify against the real box** with a captured golden stream (`python -m tower.rt.serial_source --capture`).
+- **The audio output clock is anchored with the same percentile-minimum estimator as clock discipline.** Blocking ALSA writes can only return late, so the minimum of (return time − frames written) gives when each frame plays. A whole recent window jumping late is treated as an underrun and re-anchored. Strikes are placed to the sample within a period; measured on a fake clock, every strike lands within one sample.
+- **Sound pack manifest is TOML (`manifest.toml`), not YAML**: the stdlib reads TOML, and YAML would mean another dependency. Same fields as contract 1.
+- **A synthetic ring is generated in code** (bell partials with decay), so a fresh install makes a sound and the repo holds no binary audio. It is also what offline renders use.
+- **Offsets are pack offset (recording) + tower calibration (sensors)**, the latter in `/var/lib/tower/calibration.json`. The app writes it and tells the RT process to reload; the RT process reads it at start.
+- **App → RT controls go over a second one-way datagram socket** (`control.sock`). The design drew only RT → app; calibration nudges must take effect live. Both directions are non-blocking and drop on failure.
+- **Strike envelopes carry the strike time as `t` and the pulse time as an additive `t_pulse`.** Test strikes from the calibration page use source `simulated`.
+- **Browsers map server time onto their own clock from heartbeats** (a `system` envelope every 2 s, stamped at send), taking the minimum receipt − t, so the wall animates a strike when it sounds, not when its pulse arrived.
+- **Health now includes the RT process** (`rt.expected`, default true): a fresh RT report, audio open, and the sensor open or absent-but-expected (`source.required = false`). `serve --dev` sets `rt.expected = false`.
+- **Wall-clock trust (open question 5):** NTP if systemd says synchronised; otherwise the first admin connection sends the phone's time, kept as an offset tied to the boot id rather than written to the system clock (that needs root and fights timesyncd). Diagnostics show the source; M3 session headers will record it.
+- **The synthetic source's "sensor" fires 100 ms before its strike**, as a real photohead does, so the scheduler has lead time.
+- **Unit files, Debian packages, udev and polkit rules are installed only by `install.sh`.** An update cannot add them, so M1 → M2 needs one re-run of the installer. Shipping these through the update pipeline needs a privileged helper; deferred.

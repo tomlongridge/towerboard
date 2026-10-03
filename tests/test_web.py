@@ -18,13 +18,17 @@ from tower.web.server import make_server
 
 
 class WebTestCase(unittest.TestCase):
+    rt_expected = False
+
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp())
+        self.tmp = Path(tempfile.mkdtemp(dir="/tmp"))  # short: Unix socket paths are limited
         self.overrides = self.tmp / "overrides.json"
         cfg = config.load(tower_path=self.tmp / "none.toml", overrides_path=self.overrides, cli={
             "paths": {"state_dir": str(self.tmp / "state"), "opt_dir": str(self.tmp / "opt")},
             "update": {"allowed_signers": str(helpers.allowed_signers())},
             "tower": {"name": "St Test"},
+            "ipc": {"run_dir": str(self.tmp / "run")},
+            "rt": {"expected": self.rt_expected},
         })
         self.handoffs = []
         self.fake_nm = FakeNmcli()
@@ -35,6 +39,7 @@ class WebTestCase(unittest.TestCase):
         self.port = self.server.server_address[1]
         threading.Thread(target=self.server.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True).start()
         self.addCleanup(self.server.server_close)
+        self.addCleanup(self.app.close)
         self.addCleanup(self.server.shutdown)
         self.cookie = None
 
@@ -100,13 +105,62 @@ class PublicTest(WebTestCase):
         text = json.dumps(body)
         self.assertNotIn("topsecret1", text)
         self.assertNotIn(self.app.cfg.network.ap_psk, text)
-        for key in ("version", "update", "network", "disk", "source", "audio", "sse"):
+        for key in ("version", "update", "network", "disk", "source", "audio", "sse", "wall_clock", "rt"):
             self.assertIn(key, body)
-        self.assertIn("not implemented", body["audio"])
+        self.assertEqual(body["audio"], "no report from the RT process")
+        self.assertEqual(body["sse"]["clients"], 0)
 
     def test_unknown_route_and_method(self):
         self.assertEqual(self.request("POST", "/api/nope")[0], 404)
         self.assertEqual(self.request("POST", "/api/health")[0], 405)
+
+
+def rt_status(audio="ok", source="open", detail=""):
+    from tower import version
+
+    return {"schema_version": 1, "type": "system", "seq": 1, "t": 0.0, "payload": {"rt": {
+        "version": version.full_version(),
+        "audio": {"status": audio, "detail": detail},
+        "source": {"status": source, "detail": detail},
+        "pack": {"id": "synthetic", "name": "Synthetic 16", "bells": 16, "error": ""},
+        "clock_offset_ms": 0.0,
+    }}}
+
+
+class HealthWithRtTest(WebTestCase):
+    """On the Pi (rt.expected), health reflects the RT process: the update pipeline relies on it."""
+
+    rt_expected = True
+
+    def health(self):
+        return self.request("GET", "/api/health")[1]
+
+    def test_degraded_without_rt(self):
+        body = self.health()
+        self.assertEqual(body["status"], "degraded")
+        self.assertIn("no report", body["checks"]["rt"])
+
+    def test_ok_with_rt_reporting(self):
+        self.app.bus.on_rt(rt_status())
+        body = self.health()
+        self.assertEqual(body["status"], "ok", body)
+
+    def test_absent_sensor_is_ok_unless_required(self):
+        self.app.bus.on_rt(rt_status(source="absent", detail="no serial device"))
+        self.assertEqual(self.health()["status"], "ok")
+        self.app.cfg = replace(self.app.cfg, source=replace(self.app.cfg.source, required=True))
+        self.assertEqual(self.health()["status"], "degraded")
+
+    def test_audio_failure_is_degraded(self):
+        self.app.bus.on_rt(rt_status(audio="unavailable", detail="cannot open ALSA device"))
+        body = self.health()
+        self.assertEqual(body["status"], "degraded")
+        self.assertIn("ALSA", body["checks"]["audio"])
+
+    def test_stale_report_is_degraded(self):
+        self.app.bus.on_rt(rt_status())
+        self.app.clock.advance(11)
+        self.assertEqual(self.health()["status"], "degraded")
 
 
 class AdminTest(WebTestCase):

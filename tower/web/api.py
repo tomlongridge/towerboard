@@ -5,6 +5,7 @@ Diagnostics are public on purpose: it is the page someone in a tower reads
 down a phone line, and they may not know the PIN. It holds no secrets.
 
 Admin (PIN session): releases, update upload, rollback, network mode.
+Ringing routes (live events, calibration, sound packs) are in ``ringing.py``.
 """
 
 from __future__ import annotations
@@ -14,17 +15,18 @@ import shutil
 import threading
 import time
 from dataclasses import replace
-from datetime import datetime, timezone
 from http import HTTPStatus
 from pathlib import Path
 from typing import Callable
 
-from tower import config, version
+from tower import config, ipc, version
 from tower.clock import Clock
 from tower.net import AP_ADDRESS, NetworkManager
 from tower.release import ReleaseError, ReleaseManager, host
 from tower.web import qr
+from tower.wallclock import WallClock
 from tower.web.auth import AdminAuth, AuthError
+from tower.web.events import EventBus
 from tower.web.server import HttpError, Request, Response, Routes, json_response
 
 log = logging.getLogger(__name__)
@@ -56,6 +58,7 @@ class TowerApp:
         overrides_path: Path | None = None,
         net: NetworkManager | None = None,
         handoff: Handoff | None = None,
+        wallclock: WallClock | None = None,
     ) -> None:
         self.cfg = cfg
         self.clock = clock
@@ -68,6 +71,17 @@ class TowerApp:
         self._net_lock = threading.Lock()
         self._net_result: dict | None = None
         self._update_lock = threading.Lock()
+        self.bus = EventBus(clock)
+        self.control = ipc.Sender(cfg.run_dir / ipc.CONTROL)  # app → RT, never blocks
+        self.wallclock = wallclock or WallClock(cfg.state_dir / "wallclock.json")
+        self.stop = threading.Event()  # ends SSE streams on shutdown
+        from tower.web.ringing import RingingApi
+
+        self.ringing = RingingApi(self)
+
+    def close(self) -> None:
+        self.stop.set()
+        self.control.close()
 
     # --- routing -------------------------------------------------------------
 
@@ -88,6 +102,7 @@ class TowerApp:
             ("POST", "/api/admin/rollback"): admin(self.rollback),
             ("GET", "/api/admin/network"): admin(self.network_status),
             ("POST", "/api/admin/network"): admin(self.set_network),
+            **self.ringing.routes(admin),
         }
 
     def _admin(self, route: Callable[[Request], Response]) -> Callable[[Request], Response]:
@@ -101,9 +116,38 @@ class TowerApp:
     # --- public --------------------------------------------------------------
 
     def health(self, req: Request) -> Response:
-        # M2 adds real checks: audio device opens, sensor opens or is absent-but-expected.
-        checks = {"http": "ok", "audio": "not implemented (M2)", "source": "not implemented (M2)"}
-        return json_response({"status": "ok", "version": version.full_version(), "checks": checks})
+        """Used by the update pipeline's health check (design C15 step 6).
+
+        Checks are always reported; they only fail the status when the RT
+        process is expected here (``rt.expected``), i.e. on the Pi.
+        """
+        checks = {"http": "ok", **self.rt_checks()}
+        failing = [k for k, v in checks.items() if v != "ok" and not v.startswith("absent (expected)")]
+        ok = not (self.cfg.rt.expected and failing)
+        return json_response({"status": "ok" if ok else "degraded", "version": version.full_version(),
+                              "checks": checks})
+
+    def rt_checks(self) -> dict[str, str]:
+        if not self.bus.rt_fresh():
+            missing = "no report from the RT process"
+            return {"rt": missing, "audio": missing, "source": missing}
+        st = self.bus.rt_status or {}
+        audio, source = st.get("audio", {}), st.get("source", {})
+        if not self.cfg.audio.enabled:
+            audio_check = "ok"
+        elif audio.get("status") == "ok":
+            audio_check = "ok"
+        else:
+            audio_check = f"{audio.get('status')}: {audio.get('detail', '')}".strip(": ")
+        if source.get("status") == "open":
+            source_check = "ok"
+        elif source.get("status") == "absent" and not self.cfg.source.required:
+            source_check = f"absent (expected): {source.get('detail', '')}"
+        else:
+            source_check = f"{source.get('status')}: {source.get('detail', '')}".strip(": ")
+        rt_version = st.get("version")
+        rt_check = "ok" if rt_version == version.full_version() else f"RT runs {rt_version!r}"
+        return {"rt": rt_check, "audio": audio_check, "source": source_check}
 
     def info(self, req: Request) -> Response:
         return json_response({
@@ -136,20 +180,22 @@ class TowerApp:
         except OSError as e:
             disk = {"error": str(e)}
         net = self.net.status()
+        rt = self.bus.rt_status if self.bus.rt_fresh() else None
+        age = None if self.bus.rt_status_at is None else round(self.clock.now() - self.bus.rt_status_at, 1)
         return json_response({
             "version": version.info(),
             "uptime_s": round(self.clock.now() - self.started, 1),
-            "wall_clock": {
-                "now": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "trusted": "unknown (NTP/browser time arrives in M2)",
-            },
+            "wall_clock": self.wallclock.status(),
             "update": {**self.releases.status(), "systemd": host.systemd_available()},
             "network": {**net, "last_apply": self._net_result},
             "disk": disk,
-            "source": "not implemented (M2): no dropped-byte count yet",
-            "audio": "not implemented (M2): no underrun or voice-steal counts yet",
-            "sse": "not implemented (M2): no client or drop counts yet",
-            "clock_offset": "not implemented (M2)",
+            "rt": {"reporting": rt is not None, "last_report_s_ago": age,
+                   "bad_envelopes": self.bus.rt_bad, "control_dropped": self.control.dropped},
+            "source": rt["source"] if rt else "no report from the RT process",
+            "audio": rt["audio"] if rt else "no report from the RT process",
+            "sound_pack": rt["pack"] if rt else None,
+            "clock_offset_ms": rt["clock_offset_ms"] if rt else None,
+            "sse": self.bus.stats(),
         })
 
     # --- admin session -----------------------------------------------------

@@ -64,10 +64,11 @@ class ServeTest(unittest.TestCase):
         with socket.socket() as s:
             s.bind(("127.0.0.1", 0))
             port = s.getsockname()[1]
-        tmp = Path(tempfile.mkdtemp())
+        tmp = Path(tempfile.mkdtemp(dir="/tmp"))
         toml = tmp / "tower.toml"
         toml.write_text(f'[paths]\nstate_dir = "{tmp / "state"}"\nopt_dir = "{tmp / "opt"}"\n'
-                        f'[web]\nhost = "127.0.0.1"\nport = {port}\n')
+                        f'[web]\nhost = "127.0.0.1"\nport = {port}\n'
+                        f'[ipc]\nrun_dir = "{tmp / "run"}"\n[rt]\nexpected = false\n')
         env = {**os.environ, "TOWER_OVERRIDES": str(tmp / "overrides.json")}
         proc = subprocess.Popen([sys.executable, "-m", "tower", "serve", "--config", str(toml)],
                                 cwd=ROOT, env=env, stderr=subprocess.PIPE, text=True)

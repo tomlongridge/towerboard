@@ -3,7 +3,7 @@
 import os as _os
 import sys as _sys
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # Production runs from /opt/tower/current, a symlink that an update repoints.
 # Pin this process to the release it started from, so a lazy import after a

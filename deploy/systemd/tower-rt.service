@@ -1,0 +1,25 @@
+# Hard real-time process: photohead → strike scheduling → audio.
+# Nothing in tower.service may sit between a sensor pulse and its sound.
+[Unit]
+Description=Towerboard real-time: sensor, strike scheduling, audio
+After=sound.target
+
+[Service]
+Type=simple
+User=tower
+Group=tower
+SupplementaryGroups=audio dialout
+WorkingDirectory=/opt/tower/current
+Environment=PYTHONPATH=/opt/tower/current:/opt/tower/current/vendor
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m tower rt
+# Real-time scheduling, set by systemd before dropping to the tower user.
+CPUSchedulingPolicy=fifo
+CPUSchedulingPriority=40
+LimitRTPRIO=40
+LimitMEMLOCK=infinity
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

@@ -6,8 +6,11 @@ readme = "README.md"
 # Pinned to the Pi's shipped interpreter (Raspberry Pi OS Bookworm: 3.11); see .python-version.
 requires-python = ">=3.11"
 # Stdlib-only by default. Accepted exceptions are recorded in tower-system-design.md §3.
-# Pure-Python only: releases vendor these so an offline tower never needs pip.
+# Releases vendor the pure-Python ones so an offline tower never needs pip;
+# C extensions come from Debian packages installed with the image.
 dependencies = [
+    "numpy>=1.24,<1.25",  # C extension: from Debian (python3-numpy) on the Pi, never vendored
+    "pyserial>=3.5",
     "segno>=1.6.6",
 ]
 

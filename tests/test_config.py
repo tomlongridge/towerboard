@@ -21,7 +21,7 @@ class ConfigTest(unittest.TestCase):
     def test_defaults_when_no_files(self):
         cfg = self.load()
         self.assertEqual(cfg, config.Config())
-        self.assertEqual(cfg.source.kind, "synthetic")
+        self.assertEqual(cfg.source.kind, "serial")
 
     def test_layering_order(self):
         self.tower.write_text('[tower]\nname = "St Mary"\n[synthetic]\nbells = 6\nseed = 1\n')
@@ -58,7 +58,7 @@ class ConfigTest(unittest.TestCase):
             self.load()
 
     def test_unsupported_source_kind(self):
-        self.tower.write_text('[source]\nkind = "serial"\n')
+        self.tower.write_text('[source]\nkind = "carrier-pigeon"\n')
         with self.assertRaisesRegex(config.ConfigError, "source.kind"):
             self.load()
 

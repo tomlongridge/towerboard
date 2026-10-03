@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 TOWER_CONFIG_PATH = Path("/etc/tower/tower.toml")
 OVERRIDES_PATH = Path("/var/lib/tower/overrides.json")
 
-SOURCE_KINDS = ("synthetic",)  # serial: M2, replay: M3
+SOURCE_KINDS = ("serial", "synthetic")  # replay: M3
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
 NETWORK_MODES = ("ap", "joined", "dual")
 
@@ -49,7 +49,49 @@ class TowerSection:
 
 @dataclass(frozen=True)
 class SourceSection:
-    kind: str = "synthetic"
+    kind: str = "serial"
+    # False: a missing photohead box is "absent but expected" (e.g. a tower using
+    # only the simulator) and does not fail the health check.
+    required: bool = False
+
+
+@dataclass(frozen=True)
+class SerialSection:
+    port: str = ""  # empty: find the box by USB vendor:product id, never a fixed /dev/ttyUSB0
+    usb_ids: list = field(default_factory=lambda: ["0403:6001", "0403:6015", "067b:2303", "1a86:7523", "10c4:ea60"])
+    baud: int = 2400
+    # Characters the box sends, in bell order 1..16. Matching ignores case (see tower.rt.serial_source).
+    charmap: str = "1234567890ETABCD"
+
+
+@dataclass(frozen=True)
+class StrikesSection:
+    # A pause longer than this ends a touch: strokes re-seed at handstroke.
+    touch_gap_s: float = 4.0
+
+
+@dataclass(frozen=True)
+class AudioSection:
+    enabled: bool = True
+    device: str = "default"  # ALSA PCM name; "plughw:CARD=...,DEV=0" avoids dmix latency
+    rate: int = 44100
+    channels: int = 2
+    period_frames: int = 256
+    periods: int = 3
+    voices: int = 48
+    volume_db: float = -6.0
+    pack: str = "synthetic"  # sound pack id; "synthetic" is generated in code
+
+
+@dataclass(frozen=True)
+class RtSection:
+    # Whether the health check requires a live report from the RT process.
+    expected: bool = True
+
+
+@dataclass(frozen=True)
+class IpcSection:
+    run_dir: str = "/run/tower"  # events.sock (RT → app) and control.sock (app → RT)
 
 
 @dataclass(frozen=True)
@@ -102,7 +144,7 @@ class UpdateSection:
     # OpenSSH allowed_signers file, baked into the image, never shipped in a release.
     allowed_signers: str = "/etc/tower/allowed_signers"
     health_timeout_s: float = 60.0
-    units: list = field(default_factory=lambda: ["tower.service"])
+    units: list = field(default_factory=lambda: ["tower.service", "tower-rt.service"])
 
 
 @dataclass(frozen=True)
@@ -116,6 +158,11 @@ class Config:
     admin: AdminSection = field(default_factory=AdminSection)
     network: NetworkSection = field(default_factory=NetworkSection)
     update: UpdateSection = field(default_factory=UpdateSection)
+    serial: SerialSection = field(default_factory=SerialSection)
+    strikes: StrikesSection = field(default_factory=StrikesSection)
+    audio: AudioSection = field(default_factory=AudioSection)
+    rt: RtSection = field(default_factory=RtSection)
+    ipc: IpcSection = field(default_factory=IpcSection)
 
     @property
     def state_dir(self) -> Path:
@@ -124,6 +171,10 @@ class Config:
     @property
     def opt_dir(self) -> Path:
         return Path(self.paths.opt_dir)
+
+    @property
+    def run_dir(self) -> Path:
+        return Path(self.ipc.run_dir)
 
 
 DEFAULTS: dict[str, dict[str, Any]] = {
@@ -231,4 +282,12 @@ def _build(merged: dict[str, dict[str, Any]]) -> Config:
         raise ConfigError("network.ap_ssid must be 1..32 bytes")
     if not all(isinstance(u, str) for u in cfg.update.units):
         raise ConfigError("update.units must be a list of unit names")
+    if len(cfg.serial.charmap) != 16 or len(set(cfg.serial.charmap.upper())) != 16:
+        raise ConfigError("serial.charmap must be 16 distinct characters (case-insensitive)")
+    if not all(isinstance(u, str) and len(u.split(":")) == 2 for u in cfg.serial.usb_ids):
+        raise ConfigError('serial.usb_ids must be "vvvv:pppp" strings')
+    if cfg.audio.period_frames not in (64, 128, 256, 512, 1024) or not 2 <= cfg.audio.periods <= 8:
+        raise ConfigError("audio.period_frames must be 64..1024 (power of 2) and periods 2..8")
+    if cfg.audio.channels not in (1, 2):
+        raise ConfigError("audio.channels must be 1 or 2")
     return cfg

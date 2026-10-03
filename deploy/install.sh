@@ -16,6 +16,9 @@ ETC=/etc/tower
 [ "$(id -u)" -eq 0 ] || { echo "run as root" >&2; exit 1; }
 command -v nmcli >/dev/null || { echo "NetworkManager (nmcli) is required" >&2; exit 1; }
 
+# C extensions come from Debian, never from the bundle (design §3, §6).
+apt-get install -y --no-install-recommends python3-numpy python3-alsaaudio
+
 # The default network mode turns wlan0 into the ringers' access point as soon
 # as the app starts. If this session arrived over that WiFi, it would drop.
 if nmcli -t -f DEVICE,STATE device | grep -q '^wlan0:connected' \
@@ -35,6 +38,7 @@ MSG
 fi
 
 id tower >/dev/null 2>&1 || useradd --system --home-dir "$STATE" --shell /usr/sbin/nologin tower
+usermod -aG audio,dialout tower
 install -d -o tower -g tower -m 755 "$OPT" "$OPT/releases"
 install -d -o tower -g tower -m 750 "$STATE"
 install -d -m 755 "$ETC"
@@ -60,10 +64,15 @@ run_tower() {
 VERSION=$(run_tower stage "$WORK/bundle.tower")
 run_tower activate "$VERSION" --no-restart
 
-install -m 644 "$OPT/current/deploy/systemd/tower.service" /etc/systemd/system/
-install -m 644 "$OPT/current/deploy/systemd/tower-update.service" /etc/systemd/system/
+for unit in tower.service tower-rt.service tower-update.service; do
+  install -m 644 "$OPT/current/deploy/systemd/$unit" /etc/systemd/system/
+done
 install -m 644 "$OPT/current/deploy/polkit/50-tower.rules" /etc/polkit-1/rules.d/
+install -m 644 "$OPT/current/deploy/udev/99-tower-serial.rules" /etc/udev/rules.d/
+install -m 644 "$OPT/current/deploy/tmpfiles/tower.conf" /etc/tmpfiles.d/
+systemd-tmpfiles --create /etc/tmpfiles.d/tower.conf
+udevadm control --reload && udevadm trigger --subsystem-match=usb-serial
 systemctl daemon-reload
-systemctl enable --now tower.service
+systemctl enable --now tower-rt.service tower.service
 
 echo "Installed $VERSION. Open http://<pi-address>/#/admin to set the admin PIN."

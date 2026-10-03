@@ -15,7 +15,7 @@ import threading
 from pathlib import Path
 from typing import Sequence
 
-from tower import config, migrate, version
+from tower import config, ipc, migrate, version
 from tower.clock import SystemClock
 from tower.web.api import TowerApp
 from tower.web.server import make_server
@@ -46,6 +46,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         cli["paths"] = {"state_dir": str(dev / "state"), "opt_dir": str(dev / "opt")}
         cli["web"] = {"port": 8080}
         cli["update"] = {"allowed_signers": str(dev / "allowed_signers")}
+        cli["ipc"] = {"run_dir": str(dev / "run")}
+        cli["rt"] = {"expected": False}  # health stays ok whether or not `rt --dev` is running
     web = {k: v for k, v in (("host", args.host), ("port", args.port)) if v is not None}
     if web:
         cli["web"] = {**cli.get("web", {}), **web}
@@ -62,13 +64,18 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     app = TowerApp(cfg, SystemClock(), overrides_path=overrides_path)
     _ensure_network(app)
+    _start_event_threads(app)
     try:
         server = make_server(app.routes(), cfg.web.host, cfg.web.port)
     except OSError as e:
         log.error("cannot listen on %s:%d: %s", cfg.web.host, cfg.web.port, e)
         return 1
 
-    signal.signal(signal.SIGTERM, lambda *_: threading.Thread(target=server.shutdown).start())
+    def shutdown(*_: object) -> None:
+        app.stop.set()  # ends SSE streams
+        threading.Thread(target=server.shutdown).start()
+
+    signal.signal(signal.SIGTERM, shutdown)
     log.info("tower %s serving %s on http://%s:%d/", version.full_version(), cfg.tower.name,
              cfg.web.host, cfg.web.port)
     try:
@@ -77,7 +84,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         pass
     finally:
         server.server_close()
+        app.close()
     return 0
+
+
+def _start_event_threads(app: TowerApp) -> None:
+    """RT events in, heartbeats out. Without the socket the app still serves, and says why."""
+    try:
+        receiver = ipc.Receiver(app.cfg.run_dir / ipc.EVENTS)
+    except OSError as e:
+        log.error("cannot listen for RT events at %s: %s", app.cfg.run_dir / ipc.EVENTS, e)
+    else:
+        threading.Thread(target=app.bus.run_receiver, args=(receiver, app.stop),
+                         name="rt-events", daemon=True).start()
+    threading.Thread(target=app.bus.run_heartbeat, args=(app.stop,), name="heartbeat", daemon=True).start()
 
 
 def _ensure_network(app: TowerApp) -> None:

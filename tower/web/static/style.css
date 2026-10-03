@@ -108,6 +108,38 @@ progress { width: 100%; margin-top: 10px; }
 #diag td { padding: 3px 8px 3px 0; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
 #diag td:first-child { color: var(--muted); width: 38%; }
 
+/* Ringing grid: hand = coloured, back = white (README "Active ringing"). */
+.bells { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; margin: 8px 0 12px; }
+.bell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  transition: transform 0.12s ease-out;
+}
+.bell.hand { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.bell.back { background: #fff; color: #1d1d1b; border-color: var(--line); }
+.bell.flash { transform: scale(1.08); }
+.swatch { display: inline-block; width: 0.9em; height: 0.9em; border-radius: 3px; vertical-align: -0.1em; border: 1px solid var(--line); }
+.swatch.hand { background: var(--accent); }
+.swatch.back { background: #fff; margin-left: 10px; }
+.ringing-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+button.small { padding: 4px 10px; font-size: 0.85rem; margin-left: auto; }
+
+table.cal { width: 100%; border-collapse: collapse; margin: 8px 0; }
+table.cal th, table.cal td { padding: 4px 2px; text-align: center; border-top: 1px solid var(--line); }
+table.cal th { color: var(--muted); font-weight: 500; }
+table.cal button { padding: 4px 9px; }
+table.cal .ms { display: inline-block; min-width: 4.2em; font-variant-numeric: tabular-nums; }
+label.inline { display: flex; align-items: center; gap: 8px; }
+label.inline input { width: 5em; display: inline-block; margin: 0; }
+input[type="range"] { padding: 0; }
+
 /* Wall display: ?display=wall. Large, no navigation. */
 body.wall nav, body.wall .bar.foot .muted { display: none; }
 body.wall main { max-width: none; }
@@ -115,3 +147,6 @@ body.wall #home-title { font-size: 3.4rem; }
 body.wall .lede { font-size: 1.4rem; }
 body.wall .join img { width: 300px; height: 300px; }
 body.wall .join figcaption { font-size: 1.4rem; }
+body.wall .bells { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 18px; }
+body.wall .bell { font-size: 4.5rem; }
+body.wall #reset-strokes { display: none; }
