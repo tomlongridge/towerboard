@@ -313,6 +313,23 @@ class AdminTest(WebTestCase):
         self.assertEqual(status, 400)
 
 
+class KeepAliveTest(WebTestCase):
+    def test_unread_body_does_not_corrupt_the_next_request(self):
+        """A POST body the route ignores must not be read as the start of the next request."""
+        self.login()
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+        headers = {"X-Tower-Request": "1", "Content-Type": "application/json",
+                   "Cookie": f"{COOKIE}={self.cookie}"}
+        for path in ("/api/strokes/reset", "/api/admin/updates/check", "/api/admin/logout"):
+            conn.request("POST", path, body=b"{}", headers=headers)
+            conn.getresponse().read()
+            conn.request("GET", "/api/health")  # same connection
+            resp = conn.getresponse()
+            self.assertEqual(resp.status, 200, f"after POST {path}")
+            resp.read()
+        conn.close()
+
+
 class ConcurrencyTest(WebTestCase):
     def test_held_connection_does_not_block_others(self):
         """ThreadingHTTPServer: a client stuck mid-request must not wedge the server."""

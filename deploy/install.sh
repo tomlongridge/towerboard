@@ -117,10 +117,15 @@ if [ "$KIOSK" = 1 ]; then
   install -m 644 "$OPT/current/deploy/pam/tower-kiosk" /etc/pam.d/tower-kiosk
   install -m 644 "$OPT/current/deploy/systemd/tower-kiosk.service" /etc/systemd/system/
 fi
+# Everything above onto the SD card before anything starts. Without this, a
+# power cut soon after installing leaves these files empty, and systemd treats
+# an empty unit file as masked: nothing starts again until this is rerun.
+sync
 systemctl daemon-reload
 systemctl enable --now tower-rt.service tower.service
 if [ "$KIOSK" = 1 ]; then
   systemctl enable --now tower-kiosk.service
 fi
 
+sync
 echo "Installed $VERSION. Open http://<pi-address>/#/admin to set the admin PIN."

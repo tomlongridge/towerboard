@@ -28,6 +28,39 @@ MAX_JSON_BYTES = 64 * 1024
 CSRF_HEADER = "X-Tower-Request"
 
 
+MAX_DRAIN_BYTES = 1 << 20
+
+
+class _Body:
+    """The request body, limited to its Content-Length.
+
+    What a route leaves unread is drained after it returns: on a kept-alive
+    connection, leftover bytes would otherwise be read as the start of the next
+    request (a POST of ``{}`` turned the next GET into ``{}GET``).
+    """
+
+    def __init__(self, raw: BinaryIO, length: int) -> None:
+        self.raw = raw
+        self.remaining = length
+
+    def read(self, n: int = -1) -> bytes:
+        if self.remaining <= 0:
+            return b""
+        if n is None or n < 0 or n > self.remaining:
+            n = self.remaining
+        data = self.raw.read(n)
+        self.remaining = self.remaining - len(data) if data else 0
+        return data
+
+    def drain(self) -> bool:
+        """Discard what's left. False if it's too much to bother: close the connection instead."""
+        if self.remaining > MAX_DRAIN_BYTES:
+            return False
+        while self.read(1 << 16):
+            pass
+        return True
+
+
 class HttpError(Exception):
     def __init__(self, status: int, message: str) -> None:
         super().__init__(message)
@@ -106,7 +139,12 @@ def make_server(routes: Routes, host: str, port: int, static_dir: Path = STATIC_
 
         def _handle(self, method: str) -> None:
             url = urlsplit(self.path)
-            req = Request(method, url.path, parse_qs(url.query), self.headers, self.rfile,
+            try:
+                length = max(0, int(self.headers.get("Content-Length") or 0))
+            except ValueError:
+                length = 0
+            body = _Body(self.rfile, length)
+            req = Request(method, url.path, parse_qs(url.query), self.headers, body,
                           self.client_address[0])
             try:
                 if method == "POST" and self.headers.get(CSRF_HEADER) != "1":
@@ -125,6 +163,8 @@ def make_server(routes: Routes, host: str, port: int, static_dir: Path = STATIC_
             except Exception:  # noqa: BLE001 — never kill the server thread
                 log.exception("error handling %s %s", method, url.path)
                 resp = json_response({"error": "internal error"}, 500)
+            if resp.stream is None and not body.drain():
+                self.close_connection = True
             self._send(resp)
 
         def _send(self, resp: Response) -> None:
