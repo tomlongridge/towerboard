@@ -14,12 +14,16 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
+import logging
 import sys
 from pathlib import Path
+
+from tower.fsutil import atomic_write
 from typing import Callable
 
 RECORD = "migrations.json"
+
+log = logging.getLogger(__name__)
 
 
 def _0001_state_layout(state: Path) -> None:
@@ -34,8 +38,12 @@ MIGRATIONS: list[tuple[str, Callable[[Path], None]]] = [
 
 def applied(state: Path) -> list[str]:
     try:
-        return json.loads((state / RECORD).read_text())["applied"]
+        return list(json.loads((state / RECORD).read_text())["applied"])
     except FileNotFoundError:
+        return []
+    except (ValueError, KeyError, TypeError):
+        # Damaged record: rerun everything. Safe, because every migration is idempotent.
+        log.warning("%s is damaged; rerunning all migrations", state / RECORD)
         return []
 
 
@@ -50,9 +58,7 @@ def run(state: Path) -> list[str]:
         fn(state)
         done.append(mid)
         ran.append(mid)
-        tmp = state / (RECORD + ".tmp")
-        tmp.write_text(json.dumps({"applied": done}, indent=2) + "\n")
-        os.replace(tmp, state / RECORD)
+        atomic_write(state / RECORD, json.dumps({"applied": done}, indent=2) + "\n")
     return ran
 
 

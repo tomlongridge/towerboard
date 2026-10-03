@@ -54,8 +54,8 @@ class ConfigTest(unittest.TestCase):
             self.load()
         self.tower.unlink()
         self.overrides.write_text("[1, 2]")
-        with self.assertRaises(config.ConfigError):
-            self.load()
+        with self.assertLogs("tower.config", "ERROR"):
+            self.assertEqual(self.load(), config.Config())
 
     def test_unsupported_source_kind(self):
         self.tower.write_text('[source]\nkind = "carrier-pigeon"\n')
@@ -80,6 +80,18 @@ class ConfigTest(unittest.TestCase):
         self.tower.write_text('[update]\nunits = [1]\n')
         with self.assertRaises(config.ConfigError):
             self.load()
+
+    def test_damaged_overrides_do_not_stop_startup(self):
+        """A power cut could leave overrides.json empty; the Pi must still start, in AP mode."""
+        self.tower.write_text('[tower]\nname = "St Mary"\n')
+        self.overrides.write_text("")
+        with self.assertLogs("tower.config", "ERROR"):
+            cfg = self.load()
+        self.assertEqual((cfg.tower.name, cfg.network.mode), ("St Mary", "ap"))
+        self.assertFalse(self.overrides.exists())
+        self.assertTrue(self.overrides.with_name("overrides.json.damaged").exists())
+        config.save_overrides("audio", {"volume_db": -3.0}, self.overrides)  # and saving works again
+        self.assertEqual(self.load().audio.volume_db, -3.0)
 
     def test_env_vars_locate_files(self):
         self.tower.write_text('[tower]\nname = "From env"\n')

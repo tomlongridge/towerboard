@@ -91,8 +91,15 @@
             </label>
             <label>Access point name <input id="net-ap-ssid" maxlength="32" required></label>
             <label>Access point password <input id="net-ap-psk" minlength="8" maxlength="63" required></label>
-            <label>Tower WiFi name <input id="net-up-ssid" maxlength="32"></label>
-            <label>Tower WiFi password <input id="net-up-psk" type="password" placeholder="unchanged"></label>
+            <label class="check"><input type="checkbox" id="net-share">
+              Let phones on the access point use the Pi's internet connection (over a network cable or USB dongle)</label>
+            <p class="muted small-print">Off: the access point only reaches Towerboard, and phones keep using their own mobile data for everything else.</p>
+            <fieldset class="known-nets">
+              <legend>Known WiFi networks</legend>
+              <p class="muted">Networks the Pi may join, first choice at the top. With no USB dongle, if none is in range or the connection is lost, the Pi runs its own access point until it restarts. If a network cable is plugged in, the Pi uses the cable for the internet and runs its access point instead.</p>
+              <ol id="net-list"></ol>
+              <button type="button" id="net-add" class="secondary small">Add a network</button>
+            </fieldset>
             <button type="submit">Save and apply</button>
           </form>
           <p id="net-result" role="status"></p>

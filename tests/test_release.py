@@ -53,7 +53,8 @@ class BundleTest(unittest.TestCase):
         version, sha = bundle.git_version(helpers.ROOT, "9.9.9")
         if sha is None:
             self.skipTest("not a git checkout")
-        self.assertRegex(version, r"^9\.9\.9\+g[0-9a-f]{7}(\.dirty)?$")
+        self.assertRegex(version, r"^9\.9\.9\+g[0-9a-f]{7}(\.dirty\.[0-9]{14})?$")
+        self.assertRegex(version, bundle.VERSION_RE)
 
     def test_rejects_bad_version(self):
         with self.assertRaises(ReleaseError):

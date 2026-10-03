@@ -135,7 +135,13 @@ uv run python -m tower.release build --key ~/.ssh/tower-release
 
 It prints the name of the new file, like `dist/tower-0.3.0+g1a2b3c4.tower`.
 
-**14. Copy the release, your trust file and the installer to the Pi.** This picks the newest release in `dist`:
+**14. Copy the release, your trust file and the installer to the Pi.** First clear out any releases copied there before, so the installer can't pick up an old one:
+
+```bash
+ssh ringer@towerboard.local 'rm -f ~/tower-*.tower'
+```
+
+Then copy the newest release in `dist`, with the other two files:
 
 ```bash
 scp "$(ls -t dist/*.tower | head -1)" ~/tower-allowed_signers deploy/install.sh ringer@towerboard.local:~
@@ -146,6 +152,8 @@ scp "$(ls -t dist/*.tower | head -1)" ~/tower-allowed_signers deploy/install.sh 
 > ```bash
 > sudo mkdir -p /etc/tower && printf '[network]\nmode = "joined"\nuplink_ssid = "YOUR-WIFI-NAME"\nuplink_psk = "YOUR-WIFI-PASSWORD"\n' | sudo tee /etc/tower/tower.toml
 > ```
+>
+> If your WiFi isn't available when the Pi starts, or drops out for more than a minute and a half, the Pi gives up and runs its own `towerboard` network until it's restarted, so you can always reach it. You can add more networks it may join (for example the tower's own WiFi) on the admin page.
 >
 > Later, when the Pi goes to the tower, switch it to *Access point only* on the admin page.
 
@@ -158,6 +166,10 @@ sudo sh install.sh tower-*.tower tower-allowed_signers
 ```
 
 It takes a while (ten minutes or more on a slow connection, mostly downloading the browser for the belfry display), and finishes with a line like `Installed 0.3.0+g1a2b3c4`.
+
+If it stops with an error, fix what it says and run the same command again: it picks up where it left off.
+
+> **Disconnected at the end?** As the installer finishes, Towerboard starts up and sets up the Pi's network, which can cut off your connection. You may see `Connection … closed by remote host` or `Broken pipe` straight after a line about `tower-kiosk.service`. That's fine: the install has finished. Wait a minute, log in again (step 8) and carry on with step 16.
 
 > **No monitor on this Pi?** Run the installer as `sudo TOWER_KIOSK=0 sh install.sh tower-*.tower tower-allowed_signers` instead, to skip the belfry display.
 
@@ -175,7 +187,7 @@ All three should say `active (running)`.
 
 **18. Set the admin PIN.** Click **Admin** and choose a PIN of 4 to 12 digits. The first person to open the admin page sets it, so do this straight away. If you ever forget it, ask for help resetting it.
 
-**19. Name your WiFi network.** Out of the box, the Pi makes a WiFi network called `towerboard` with the password `bellringing`. Change both in **Admin → Network**, and keep *Access point only* selected. Ringers' phones join this network, then open `http://10.42.0.1/` (or scan the QR codes on the home page).
+**19. Name your WiFi network.** Out of the box, the Pi makes a WiFi network called `towerboard` with the password `bellringing`. Change both in **Admin → Network**, and keep *Access point only* selected. Leave *Let phones … use the Pi's internet connection* unticked unless you want ringers' phones to use the Pi's internet (if it has one, through a network cable); unticked, they keep using their own mobile data. Ringers' phones join this network, then open `http://10.42.0.1/` (or scan the QR codes on the home page).
 
 **20. Set up sound.** Log in to the Pi (step 8) and list its sound outputs:
 

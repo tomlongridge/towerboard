@@ -137,6 +137,19 @@ table.cal th { color: var(--muted); font-weight: 500; }
 table.cal button { padding: 4px 9px; }
 table.cal .ms { display: inline-block; min-width: 4.2em; font-variant-numeric: tabular-nums; }
 label.inline { display: flex; align-items: center; gap: 8px; }
+
+label.check { display: flex; gap: 8px; align-items: flex-start; }
+label.check input { width: auto; margin-top: 3px; }
+.small-print { font-size: 0.85rem; margin-top: -6px; }
+
+fieldset.known-nets { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 12px; }
+fieldset.known-nets legend { padding: 0 4px; }
+#net-list { margin: 0 0 8px; padding-left: 1.4em; }
+#net-list li { margin: 0 0 10px; }
+#net-list .net-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#net-list input { flex: 1 1 140px; margin: 0; }
+#net-list button { padding: 6px 10px; }
+.warn-text { color: var(--error); }
 label.inline input { width: 5em; display: inline-block; margin: 0; }
 input[type="range"] { padding: 0; }
 

@@ -9,7 +9,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from tests import helpers
-from tests.test_net import FakeNmcli
+from tests.test_net import FakeNmcli, sharing_file
 from tower import config
 from tower.clock import FakeClock
 from tower.net import NetworkManager
@@ -33,7 +33,7 @@ class WebTestCase(unittest.TestCase):
         self.handoffs = []
         self.fake_nm = FakeNmcli()
         self.app = TowerApp(cfg, FakeClock(), overrides_path=self.overrides,
-                            net=NetworkManager(cfg.network, runner=self.fake_nm),
+                            net=NetworkManager(cfg.network, runner=self.fake_nm, sharing_conf=sharing_file()),
                             handoff=lambda action, v: self.handoffs.append((action, v)) or "handed (test)")
         self.server = make_server(self.app.routes(), "127.0.0.1", 0)
         self.port = self.server.server_address[1]
@@ -188,6 +188,13 @@ class AdminTest(WebTestCase):
         status, _ = self.request("POST", "/api/admin/login", {"pin": "246810"})
         self.assertEqual(status, 200)
 
+    def test_damaged_pin_file_gives_clear_error(self):
+        (self.tmp / "state").mkdir(parents=True, exist_ok=True)
+        (self.tmp / "state" / "admin.json").write_text("")
+        status, body = self.request("POST", "/api/admin/login", {"pin": "1234"})
+        self.assertEqual(status, 503)
+        self.assertIn("damaged", body["error"])
+
     def test_cannot_take_over_existing_pin(self):
         self.login()
         self.cookie = None
@@ -232,28 +239,76 @@ class AdminTest(WebTestCase):
         self.assertEqual(status, 409)
         self.assertEqual(self.handoffs, [])
 
+    def wait_for_network_apply(self):
+        for _ in range(200):
+            with self.app._net_lock:
+                if self.app._net_result:
+                    return self.app._net_result
+            threading.Event().wait(0.02)
+        self.fail("network change never applied")
+
     def test_network_change_persists_and_applies(self):
         self.login()
-        status, body = self.request("POST", "/api/admin/network",
-                                    {"mode": "joined", "uplink_ssid": "Church", "uplink_psk": "secret99"})
+        status, body = self.request("POST", "/api/admin/network", {
+            "mode": "joined",
+            "uplinks": [{"ssid": "Church", "psk": "secret99"}, {"ssid": "Tower", "psk": "towerpass"}],
+        })
         self.assertEqual(status, 202, body)
         saved = json.loads(self.overrides.read_text())
         self.assertEqual(saved["network"]["mode"], "joined")
+        self.assertEqual([u["ssid"] for u in saved["network"]["uplinks"]], ["Church", "Tower"])
         self.assertEqual(self.overrides.stat().st_mode & 0o777, 0o600)
-        with self.app._net_lock:  # wait for the background apply
-            pass
-        for _ in range(100):
-            if self.app._net_result:
-                break
-            threading.Event().wait(0.02)
-        self.assertEqual(self.app._net_result["effective"], "joined")
+        self.assertEqual(self.wait_for_network_apply()["effective"], "joined")
         _, status_body = self.request("GET", "/api/admin/network")
-        self.assertNotIn("secret99", json.dumps(status_body))
-        self.assertTrue(status_body["uplink_psk_set"])
+        self.assertNotIn("secret99", json.dumps(status_body))  # passwords never leave the Pi
+        self.assertEqual(status_body["known_networks"], [{"ssid": "Church", "password_set": True},
+                                                         {"ssid": "Tower", "password_set": True}])
+        self.assertIsNone(status_body["fallback"])
+
+    def test_settings_shown_even_when_nmcli_unreadable(self):
+        """The page fills its form from this; a missing name blocked saving."""
+        self.login()
+        import subprocess
+
+        self.app.net.runner = lambda argv, timeout=60: subprocess.CompletedProcess(argv, 8, "", "NetworkManager is not running")
+        _, body = self.request("GET", "/api/admin/network")
+        self.assertEqual((body["ap_ssid"], body["mode"]), ("towerboard", "ap"))
+
+    def test_internet_sharing_setting(self):
+        self.login()
+        _, body = self.request("GET", "/api/admin/network")
+        self.assertFalse(body["ap_share_internet"])  # local only unless chosen
+        status, _ = self.request("POST", "/api/admin/network", {"ap_share_internet": True})
+        self.assertEqual(status, 202)
+        self.wait_for_network_apply()
+        self.assertTrue(json.loads(self.overrides.read_text())["network"]["ap_share_internet"])
+        self.assertIn("phones may use", self.app.net.sharing_conf.read_text())
+        self.assertEqual(self.request("POST", "/api/admin/network", {"ap_share_internet": "yes"})[0], 400)
+
+    def test_saved_password_kept_when_not_resent(self):
+        self.login()
+        self.request("POST", "/api/admin/network", {"uplinks": [{"ssid": "Church", "psk": "secret99"}]})
+        self.wait_for_network_apply()
+        # The page reorders and adds a network; it cannot send Church's password back.
+        self.request("POST", "/api/admin/network",
+                     {"uplinks": [{"ssid": "New", "psk": "newpass1"}, {"ssid": "Church"}]})
+        saved = json.loads(self.overrides.read_text())["network"]["uplinks"]
+        self.assertEqual(saved, [{"ssid": "New", "psk": "newpass1"}, {"ssid": "Church", "psk": "secret99"}])
+
+    def test_fallback_reported(self):
+        self.login()
+        self.fake_nm.in_range.clear()
+        self.request("POST", "/api/admin/network", {"mode": "joined", "uplinks": [{"ssid": "Church"}]})
+        result = self.wait_for_network_apply()
+        self.assertEqual(result["effective"], "ap")
+        _, body = self.request("GET", "/api/admin/network")
+        self.assertIn("until the Pi restarts", body["fallback"]["detail"])
 
     def test_network_change_validated(self):
         self.login()
-        for body in ({"mode": "bogus"}, {"ap_psk": "short"}, {"unknown": 1}):
+        for body in ({"mode": "bogus"}, {"ap_psk": "short"}, {"unknown": 1},
+                     {"uplinks": "Church"}, {"uplinks": [{"ssid": "Church", "psk": "short"}]},
+                     {"uplinks": [{"ssid": "x" * 33}]}):
             with self.subTest(body=body):
                 self.assertEqual(self.request("POST", "/api/admin/network", body)[0], 400)
         self.assertFalse(self.overrides.exists())

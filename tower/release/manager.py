@@ -27,6 +27,7 @@ from typing import Callable
 
 from tower.release import bundle
 from tower.release.bundle import ReleaseError
+from tower.fsutil import atomic_write, fsync_dir
 
 log = logging.getLogger(__name__)
 
@@ -119,7 +120,9 @@ class ReleaseManager:
             final = self.releases / version
             if final.exists():
                 shutil.rmtree(final)
+            os.sync()  # every unpacked file on the card before the release can be switched to
             os.rename(staging, final)
+            fsync_dir(self.releases)
         log.info("staged %s", version)
         return version
 
@@ -217,6 +220,7 @@ class ReleaseManager:
         tmp.unlink(missing_ok=True)
         os.symlink(Path("releases") / version, tmp)
         os.replace(tmp, link)
+        fsync_dir(link.parent)
 
     def _point_or_clear(self, link: Path, version: str | None) -> None:
         if version:
@@ -236,7 +240,4 @@ class ReleaseManager:
         return result
 
     def _write_status(self, data: dict) -> None:
-        self.state.mkdir(parents=True, exist_ok=True)
-        tmp = self.state / (STATUS_FILE + ".tmp")
-        tmp.write_text(json.dumps(data, indent=2) + "\n")
-        os.replace(tmp, self.state / STATUS_FILE)
+        atomic_write(self.state / STATUS_FILE, json.dumps(data, indent=2) + "\n")

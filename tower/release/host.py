@@ -13,7 +13,6 @@ the Pi, ``systemd_available()`` is false and the app says so.
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import urllib.error
@@ -22,6 +21,7 @@ from pathlib import Path
 from typing import Callable
 
 from tower.clock import Clock
+from tower.fsutil import atomic_write
 
 REQUEST_FILE = "update-request.json"
 UPDATER_UNIT = "tower-update.service"
@@ -38,10 +38,7 @@ def systemd_available() -> bool:
 
 
 def write_request(state: Path, action: str, version: str | None = None) -> None:
-    state.mkdir(parents=True, exist_ok=True)
-    tmp = state / (REQUEST_FILE + ".tmp")
-    tmp.write_text(json.dumps({"action": action, "version": version}) + "\n")
-    os.replace(tmp, state / REQUEST_FILE)
+    atomic_write(state / REQUEST_FILE, json.dumps({"action": action, "version": version}) + "\n")
 
 
 def take_request(state: Path) -> dict | None:
@@ -50,8 +47,10 @@ def take_request(state: Path) -> dict | None:
         req = json.loads(path.read_text())
     except FileNotFoundError:
         return None
+    except ValueError:
+        req = None  # damaged by a power cut: drop it; the admin page shows no update ran
     path.unlink()
-    return req
+    return req if isinstance(req, dict) else None
 
 
 def start_updater(runner: Runner = run) -> None:

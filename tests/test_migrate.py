@@ -36,3 +36,10 @@ class MigrateTest(unittest.TestCase):
     def test_ids_unique_and_ordered(self):
         ids = [mid for mid, _ in migrate.MIGRATIONS]
         self.assertEqual(ids, sorted(set(ids)))
+
+    def test_damaged_record_reruns_everything(self):
+        migrate.run(self.state)
+        (self.state / "migrations.json").write_text("")
+        with self.assertLogs("tower.migrate", "WARNING"):
+            self.assertEqual(migrate.run(self.state), ["0001_state_layout"])
+        self.assertEqual(migrate.applied(self.state), ["0001_state_layout"])

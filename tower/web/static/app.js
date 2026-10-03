@@ -121,21 +121,67 @@ async function loadReleases() {
   $("rollback").disabled = !r.previous;
 }
 
+// Known networks: the page never receives saved passwords. A blank password
+// field means "keep the saved one" (shown as a placeholder).
+function netRow(ssid = "", passwordSet = false) {
+  const li = document.createElement("li");
+  const row = document.createElement("div");
+  row.className = "net-row";
+  const name = document.createElement("input");
+  name.className = "net-ssid";
+  name.maxLength = 32;
+  name.placeholder = "Network name";
+  name.value = ssid;
+  name.setAttribute("aria-label", "Network name");
+  const pass = document.createElement("input");
+  pass.className = "net-psk";
+  pass.type = "password";
+  pass.placeholder = passwordSet ? "Password saved" : "Password (blank if open)";
+  pass.setAttribute("aria-label", `Password for ${ssid || "this network"}`);
+  const btn = (label, title, fn) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "secondary";
+    b.textContent = label;
+    b.title = title;
+    b.setAttribute("aria-label", title);
+    b.onclick = fn;
+    return b;
+  };
+  row.append(name, pass,
+    btn("↑", "Move up", () => li.previousElementSibling && li.parentNode.insertBefore(li, li.previousElementSibling)),
+    btn("✕", "Remove", () => li.remove()));
+  li.appendChild(row);
+  return li;
+}
+
+$("net-add").addEventListener("click", () => {
+  $("net-list").appendChild(netRow());
+  $("net-list").lastElementChild.querySelector(".net-ssid").focus();
+});
+
 async function loadNetwork() {
   const n = await api("/api/admin/network");
   $("net-mode").value = n.mode;
   $("net-ap-ssid").value = n.ap_ssid || "";
-  $("net-up-ssid").value = n.uplink_ssid || "";
-  $("net-up-psk").placeholder = n.uplink_psk_set ? "unchanged" : "none";
+  $("net-share").checked = Boolean(n.ap_share_internet);
+  $("net-list").replaceChildren(...(n.known_networks || []).map((k) => netRow(k.ssid, k.password_set)));
   const info = await api("/api/info");
   $("net-ap-psk").value = info.ap_psk;
+  const status = $("net-status");
+  status.classList.toggle("warn-text", Boolean(n.fallback));
   if (!n.available) {
-    $("net-status").textContent = n.detail;
+    status.textContent = n.detail;
+  } else if (n.fallback) {
+    status.textContent = `No known network was available, so the Pi is running its own access point until it restarts. ${n.fallback.detail}`;
   } else {
-    const parts = [`AP ${n.ap_active ? "up" : "down"}`, `uplink ${n.uplink_active ? "up" : "down"}`,
+    const parts = [`Access point ${n.ap_active ? "on" : "off"}`,
+      n.cable_connected ? "network cable connected" : "no network cable",
+      n.connected_ssid ? `joined ${n.connected_ssid}` : "not joined to a network",
       n.dongle ? `dongle ${n.dongle}` : "no USB dongle"];
+    if (n.sharing_error) parts.push(n.sharing_error);
     if (n.last_apply) parts.push(`last change: ${n.last_apply.detail}`);
-    $("net-status").textContent = parts.join(" · ");
+    status.textContent = parts.join(" · ");
   }
 }
 
@@ -242,21 +288,28 @@ async function waitForRestart(expected, out) {
 $("net-form").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const mode = $("net-mode").value;
+  const uplinks = [...$("net-list").children].map((li) => {
+    const entry = { ssid: li.querySelector(".net-ssid").value.trim() };
+    const psk = li.querySelector(".net-psk").value;
+    if (psk) entry.psk = psk;
+    return entry;
+  }).filter((u) => u.ssid);
   const body = {
-    mode,
-    ap_ssid: $("net-ap-ssid").value,
-    ap_psk: $("net-ap-psk").value,
-    uplink_ssid: $("net-up-ssid").value,
+    mode, ap_ssid: $("net-ap-ssid").value, ap_psk: $("net-ap-psk").value,
+    ap_share_internet: $("net-share").checked, uplinks,
   };
-  if ($("net-up-psk").value) body.uplink_psk = $("net-up-psk").value;
+  if (mode !== "ap" && !uplinks.length) {
+    $("net-result").textContent = "Add at least one known network for this mode.";
+    return;
+  }
   if (mode === "joined" && !confirm(
-    "In 'join' mode the tower access point turns off. If joining fails it comes back on its own. Continue?")) return;
+    "The Pi will leave its own access point and join one of your known networks. " +
+    "If none is available, the access point comes back on its own. Continue?")) return;
   try {
     const r = await api("/api/admin/network", { method: "POST", body });
     $("net-result").textContent = r.applied === "in progress"
       ? "Saved. Applying now; you may need to reconnect to the WiFi."
       : r.detail;
-    $("net-up-psk").value = "";
     setTimeout(loadNetwork, 4000);
   } catch (e) {
     $("net-result").textContent = e.message;

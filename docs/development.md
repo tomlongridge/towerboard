@@ -111,8 +111,12 @@ It also sets up the belfry display: `tower-kiosk.service` runs Chromium full scr
 **Every later update** goes through the update pipeline: upload the bundle on the admin page, or from the Mac:
 
 ```bash
-scripts/deploy-dev.sh towerboard.local
+make deploy
 ```
+
+`make` on its own lists the other tasks (`test`, `serve`, `rt`, `status`, `logs`, …). Put your Pi's address in `local.mk` (not committed) as `PI = ringer@your-pi.local`, and run `make ssh-key` once for password-free login.
+
+The round trip runs the tests, builds a signed release (uncommitted changes get a timestamped version, so every build is distinct), copies it over, installs it through the updater, and waits for the restart and health check. It ends with the result and how long it took. Every deploy restarts the app and sound services: each release is a separate folder and a running process stays pinned to the one it started from. For fast iteration on the web pages, use `make serve` on the Mac and deploy when it's ready.
 
 This builds, copies and installs through the same verify → stage → swap → health check → auto-rollback path a tower uses, never by rsyncing over a live tree. Layout on the Pi:
 

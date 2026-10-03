@@ -8,6 +8,8 @@ written on the wall next to the QR code.
 There is no shipped default PIN. Until one is set, the first person to open
 the admin page sets it (as the README describes: the first user becomes
 admin). If it is forgotten, delete ``<state>/admin.json`` from the SD card.
+A damaged file (e.g. from a power cut on an older release) is reported as
+such; it never falls back to "no PIN", which would let anyone set one.
 
 The PIN is stored as a PBKDF2 hash. Sessions are random tokens held in
 memory, so they end on restart, including after every update. Repeated
@@ -20,13 +22,13 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import os
 import re
 import secrets
 import threading
 from pathlib import Path
 
 from tower.clock import Clock
+from tower.fsutil import atomic_write
 
 PIN_RE = re.compile(r"^[0-9]{4,12}$")
 ITERATIONS = 200_000
@@ -35,6 +37,10 @@ LOCKOUT_S = 60.0
 
 
 class AuthError(Exception):
+    pass
+
+
+class DamagedPinFile(AuthError):
     pass
 
 
@@ -60,11 +66,7 @@ class AdminAuth:
                 raise AuthError("log in to change the PIN")
             salt = secrets.token_bytes(16)
             data = {"salt": salt.hex(), "iterations": ITERATIONS, "hash": _hash(new, salt, ITERATIONS)}
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = self.path.with_suffix(".tmp")
-            tmp.write_text(json.dumps(data) + "\n")
-            os.chmod(tmp, 0o600)
-            os.replace(tmp, self.path)
+            atomic_write(self.path, json.dumps(data) + "\n", 0o600)
             self._sessions.clear()  # a PIN change ends every other session
             return self._new_session()
 
@@ -75,7 +77,7 @@ class AdminAuth:
                 raise AuthError(f"too many attempts; try again in {int(self._locked_until - now) + 1} s")
             if not self.has_pin():
                 raise AuthError("no PIN set yet")
-            stored = json.loads(self.path.read_text())
+            stored = self._read()
             attempt = _hash(pin, bytes.fromhex(stored["salt"]), stored["iterations"])
             if not hmac.compare_digest(attempt, stored["hash"]):
                 self._failures += 1
@@ -93,6 +95,18 @@ class AdminAuth:
     def logout(self, token: str | None) -> None:
         with self._lock:
             self._sessions.pop(token or "", None)
+
+    def _read(self) -> dict:
+        try:
+            stored = json.loads(self.path.read_text())
+            bytes.fromhex(stored["salt"])
+            int(stored["iterations"])
+            str(stored["hash"])
+            return stored
+        except (OSError, ValueError, KeyError, TypeError):
+            raise DamagedPinFile(
+                f"the admin PIN file is damaged; delete {self.path} on the Pi to set a new PIN"
+            ) from None
 
     def _valid(self, token: str | None) -> bool:
         if not token:

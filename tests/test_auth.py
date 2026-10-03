@@ -4,7 +4,7 @@ from pathlib import Path
 
 from tower.clock import FakeClock
 from tower.web import auth
-from tower.web.auth import AdminAuth, AuthError
+from tower.web.auth import AdminAuth, AuthError, DamagedPinFile
 
 
 class AdminAuthTest(unittest.TestCase):
@@ -74,3 +74,13 @@ class AdminAuthTest(unittest.TestCase):
         self.auth.set_pin("1234")
         again = AdminAuth(self.path, self.clock, session_s=3600)
         self.assertTrue(again.check(again.login("1234")))
+
+    def test_damaged_pin_file_is_reported_not_bypassed(self):
+        """An empty file (power cut on an older release) must not let anyone set a new PIN."""
+        for content in ("", "{not json", '{"salt": "zz", "iterations": 1, "hash": "x"}', "{}"):
+            with self.subTest(content=content):
+                self.path.write_text(content)
+                with self.assertRaisesRegex(DamagedPinFile, "delete"):
+                    self.auth.login("1234")
+                with self.assertRaises(AuthError):
+                    self.auth.set_pin("9999")  # still counts as having a PIN

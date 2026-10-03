@@ -21,11 +21,11 @@ from typing import Callable
 
 from tower import config, ipc, version
 from tower.clock import Clock
-from tower.net import AP_ADDRESS, NetworkManager
+from tower.net import AP_ADDRESS, NetworkManager, Watchdog
 from tower.release import ReleaseError, ReleaseManager, host
 from tower.web import qr
 from tower.wallclock import WallClock
-from tower.web.auth import AdminAuth, AuthError
+from tower.web.auth import AdminAuth, AuthError, DamagedPinFile
 from tower.web.events import EventBus
 from tower.web.server import HttpError, Request, Response, Routes, json_response
 
@@ -70,6 +70,7 @@ class TowerApp:
         self.handoff = handoff or systemd_handoff(cfg.state_dir)
         self._net_lock = threading.Lock()
         self._net_result: dict | None = None
+        self.watchdog = Watchdog(self.net, clock.now())
         self._update_lock = threading.Lock()
         self.bus = EventBus(clock)
         self.control = ipc.Sender(cfg.run_dir / ipc.CONTROL)  # app → RT, never blocks
@@ -208,6 +209,9 @@ class TowerApp:
         pin = str(req.json().get("pin", ""))
         try:
             token = self.auth.login(pin)
+        except DamagedPinFile as e:
+            log.error("%s", e)
+            raise HttpError(HTTPStatus.SERVICE_UNAVAILABLE, str(e)) from None
         except AuthError as e:
             raise HttpError(HTTPStatus.UNAUTHORIZED, str(e)) from None
         return self._with_session({"logged_in": True}, token)
@@ -284,8 +288,20 @@ class TowerApp:
 
     def network_status(self, req: Request) -> Response:
         status = self.net.status()
-        return json_response({**status, "last_apply": self._net_result,
-                              "uplink_psk_set": bool(self.cfg.network.uplink_psk)})
+        fallback = self.watchdog.fell_back
+        return json_response({
+            **status,
+            # Settings come from config, not from NetworkManager, so the form can
+            # always be filled in, even when nmcli can't be read.
+            "mode": self.cfg.network.mode,
+            "ap_ssid": self.cfg.network.ap_ssid,
+            "ap_share_internet": self.cfg.network.ap_share_internet,
+            "last_apply": self._net_result,
+            # Passwords never leave the Pi; the page only learns whether one is set.
+            "known_networks": [{"ssid": ssid, "password_set": bool(psk)}
+                               for ssid, psk in self.cfg.network.uplink_networks()],
+            "fallback": fallback.as_dict() if fallback else None,
+        })
 
     def set_network(self, req: Request) -> Response:
         """Persist the mode, then apply it in the background.
@@ -294,10 +310,12 @@ class TowerApp:
         this request arrived on.
         """
         body = req.json()
-        allowed = {"mode", "ap_ssid", "ap_psk", "uplink_ssid", "uplink_psk"}
+        allowed = {"mode", "ap_ssid", "ap_psk", "ap_share_internet", "uplinks"}
         values = {k: v for k, v in body.items() if k in allowed}
         if not values:
             raise HttpError(HTTPStatus.BAD_REQUEST, f"expected some of {sorted(allowed)}")
+        if "uplinks" in values:
+            values.update(self._known_networks(values["uplinks"]))
         try:
             config.save_overrides("network", values, self.overrides_path)
         except config.ConfigError as e:
@@ -310,12 +328,50 @@ class TowerApp:
         threading.Thread(target=self.apply_network, name="net-apply", daemon=True).start()
         return json_response({"saved": True, "applied": "in progress"}, HTTPStatus.ACCEPTED)
 
+    def _known_networks(self, entries: object) -> dict:
+        """The page's list of known networks → config values.
+
+        A network sent without a password keeps the one already saved for it,
+        since the page never receives saved passwords to send back.
+        """
+        if not isinstance(entries, list) or not all(
+                isinstance(e, dict) and isinstance(e.get("ssid"), str) for e in entries):
+            raise HttpError(HTTPStatus.BAD_REQUEST, 'uplinks must be a list of {"ssid": ..., "psk": ...}')
+        saved = dict(self.cfg.network.uplink_networks())
+        uplinks = []
+        for e in entries:
+            ssid = e["ssid"].strip()
+            if not ssid:
+                continue
+            psk = e.get("psk") or saved.get(ssid, "")
+            uplinks.append({"ssid": ssid, "psk": psk})
+        # The list replaces the older single-network setting.
+        return {"uplinks": uplinks, "uplink_ssid": "", "uplink_psk": ""}
+
     def apply_network(self) -> None:
         with self._net_lock:
             # Let the response reach the phone before the AP drops.
             self.clock.sleep_until(self.clock.now() + 1.0)
             try:
-                self._net_result = self.net.apply().as_dict()
+                result = self.net.apply()
+                self._net_result = result.as_dict()
+                self.watchdog.reset(self.clock.now())
+                if self.cfg.network.mode == "joined" and result.effective == "ap":
+                    self.watchdog.fell_back = result  # already on the AP until reboot
             except Exception as e:  # noqa: BLE001
                 log.exception("network apply failed")
                 self._net_result = {"ok": False, "detail": str(e)}
+
+    def run_watchdog(self, stop: threading.Event, interval_s: float = 10.0) -> None:
+        """Single radio: fall back to the AP until reboot when no known network is reachable."""
+        while not stop.wait(interval_s):
+            if not self._net_lock.acquire(blocking=False):
+                continue  # a deliberate change is being applied
+            try:
+                result = self.watchdog.check(self.clock.now())
+                if result:
+                    self._net_result = result.as_dict()
+            except Exception:  # noqa: BLE001 — never let the watchdog die
+                log.exception("network watchdog failed")
+            finally:
+                self._net_lock.release()

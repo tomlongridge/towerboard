@@ -9,8 +9,9 @@ state, never in the shipped sound pack.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
+
+from tower.fsutil import atomic_write
 
 STEP_MS = 5.0
 LIMIT_MS = 1500.0
@@ -50,7 +51,4 @@ class Calibration:
         return {str(b): dict(v) for b, v in sorted(self.offsets.items())}
 
     def save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"offsets_ms": self.as_dict()}, indent=2) + "\n")
-        os.replace(tmp, self.path)
+        atomic_write(self.path, json.dumps({"offsets_ms": self.as_dict()}, indent=2) + "\n")

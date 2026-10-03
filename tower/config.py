@@ -26,6 +26,8 @@ import os
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from tower.fsutil import atomic_write
 from typing import Any, Mapping
 
 log = logging.getLogger(__name__)
@@ -134,9 +136,24 @@ class NetworkSection:
     ap_interface: str = "wlan0"  # onboard radio
     ap_ssid: str = "towerboard"
     ap_psk: str = "bellringing"
+    # Whether phones on the access point may reach the internet through the Pi
+    # (over the cable or the dongle). Off: the AP is local only.
+    ap_share_internet: bool = False
+    # Known networks to join, in order of preference: [{ssid = "...", psk = "..."}].
+    # uplink_ssid/uplink_psk is the older single-network form, still honoured first.
+    uplinks: list = field(default_factory=list)
     uplink_ssid: str = ""
     uplink_psk: str = ""
     join_timeout_s: float = 30.0
+    # Single radio: with no known network for this long, run the AP until reboot.
+    fallback_after_s: float = 90.0
+
+    def uplink_networks(self) -> list[tuple[str, str]]:
+        """Every known network as (ssid, psk), first preference first, without duplicates."""
+        nets = [(self.uplink_ssid, self.uplink_psk)] if self.uplink_ssid else []
+        nets += [(u["ssid"], u.get("psk", "")) for u in self.uplinks]
+        seen: set[str] = set()
+        return [(ssid, psk) for ssid, psk in nets if not (ssid in seen or seen.add(ssid))]
 
 
 @dataclass(frozen=True)
@@ -192,7 +209,7 @@ def load(
 
     merged = copy.deepcopy(DEFAULTS)
     _merge(merged, _read_toml(tower_path), str(tower_path))
-    _merge(merged, _read_json(overrides_path), str(overrides_path))
+    _merge(merged, _read_overrides(overrides_path), str(overrides_path))
     _merge(merged, cli or {}, "command line")
     return _build(merged)
 
@@ -205,6 +222,26 @@ def _read_toml(path: Path) -> dict[str, Any]:
         return {}
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"{path}: {e}") from None
+
+
+def _read_overrides(path: Path) -> dict[str, Any]:
+    """Runtime overrides, or none if the file is damaged.
+
+    A damaged overrides file (a power cut on an older release could leave it
+    empty) must not stop the Pi starting: it is set aside, and the tower config
+    and defaults apply, which includes the access point, so the admin page stays
+    reachable to put things right.
+    """
+    try:
+        return _read_json(path)
+    except ConfigError as e:
+        damaged = path.with_name(path.name + ".damaged")
+        log.error("%s; ignoring it (kept as %s)", e, damaged)
+        try:
+            os.replace(path, damaged)
+        except OSError:
+            pass
+        return {}
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -255,16 +292,12 @@ def save_overrides(section: str, values: Mapping[str, Any], path: Path | None = 
     if section not in DEFAULTS:
         raise ConfigError(f"unknown section [{section}]")
     path = path or Path(os.environ.get("TOWER_OVERRIDES", OVERRIDES_PATH))
-    current = _read_json(path)
+    current = _read_overrides(path)
     current.setdefault(section, {}).update(values)
     candidate = copy.deepcopy(DEFAULTS)
     _merge(candidate, current, "overrides")
     _build(candidate)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(current, indent=2) + "\n")
-    os.chmod(tmp, 0o600)  # may hold WiFi passphrases
-    os.replace(tmp, path)
+    atomic_write(path, json.dumps(current, indent=2) + "\n", 0o600)  # may hold WiFi passphrases
 
 
 def _build(merged: dict[str, dict[str, Any]]) -> Config:
@@ -280,6 +313,13 @@ def _build(merged: dict[str, dict[str, Any]]) -> Config:
         raise ConfigError("network.ap_psk must be 8..63 characters (WPA2)")
     if not 1 <= len(cfg.network.ap_ssid.encode()) <= 32:
         raise ConfigError("network.ap_ssid must be 1..32 bytes")
+    for u in cfg.network.uplinks:
+        if not isinstance(u, dict) or not isinstance(u.get("ssid"), str) \
+                or not 1 <= len(u["ssid"].encode()) <= 32:
+            raise ConfigError('network.uplinks entries need an ssid of 1..32 bytes: {ssid = "...", psk = "..."}')
+        psk = u.get("psk", "")
+        if not isinstance(psk, str) or (psk and not 8 <= len(psk) <= 63):
+            raise ConfigError(f"network.uplinks: password for {u['ssid']!r} must be empty or 8..63 characters")
     if not all(isinstance(u, str) for u in cfg.update.units):
         raise ConfigError("update.units must be a list of unit names")
     if len(cfg.serial.charmap) != 16 or len(set(cfg.serial.charmap.upper())) != 16:

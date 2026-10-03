@@ -21,7 +21,7 @@ A single Raspberry Pi in a tower that does four jobs:
 | Constraint | Consequence |
 |---|---|
 | Must be distributable to arbitrary towers | No tower-specific code paths. Everything tower-specific lives in config or content, not in the image. |
-| Home tower has no WiFi | The Pi is its own access point. Content arrives by phone-as-courier or USB, not by pull. |
+| Home tower has no WiFi | The Pi is its own access point. It fetches releases from GitHub whenever it can reach the internet: over a cable, the tower's WiFi, a USB dongle, or, with a single radio, briefly through a known network (such as a phone hotspot) during its update check. |
 | Audio timing must be perceptually exact | Hard real-time path (sensor → audio) is strictly separated from the loose real-time path (events → display). |
 | Ringers can't be asked to re-pair or fiddle | Joining is a QR code. Display is a browser. No app install required, and no native app: the web app is the only client. |
 | One SD card image for bench and tower | No environment-specific builds. Behaviour differences come from runtime detection and config only. |
@@ -73,7 +73,7 @@ flowchart TB
   WEB -- SSE --> PHONE
   PHONE -- controls --> WEB
   ADMIN --> UPD["Update pipeline<br/>verify → stage → symlink swap → health check"]
-  ADMIN --> NET["Network manager<br/>joined | ap | dual"]
+  ADMIN --> NET["Network manager<br/>AP always + cable | dongle | single-radio check"]
 ```
 
 Two processes, not one and not ten. The split is at the timing boundary. IPC between them is a one-way local socket carrying the event contract; the application process may never block the RT process.
@@ -95,7 +95,7 @@ Two processes, not one and not ten. The split is at the timing boundary. IPC bet
 | C11 | Web app (phone + kiosk) | client | `tower/web/static` |
 | C12 | Identity and statistics | app | `tower.identity` |
 | C13 | Notice board / announcements | app | `tower.board` |
-| C14 | Content delivery (courier + pull) | app | `tower.content` |
+| C14 | Content delivery (pull from GitHub and online sources) | app | `tower.content` |
 | C15 | Update pipeline | app | `tower.release` |
 | C16 | Network manager | app | `tower.net` |
 | C17 | Config and admin | app | `tower.config`, `tower.web.admin` |
@@ -392,20 +392,20 @@ priority: high
 
 ### C14 — Content delivery
 
-**Model: phone as courier.** The tower has no internet. A steward downloads a signed content bundle outside the tower, walks in, joins the Pi's AP, and uploads the bundle through a file input in the admin page. The Pi runs the same verify-and-apply pipeline it would use for a pulled bundle.
+**Model: the Pi pulls.** Whenever it has internet, the Pi fetches what it needs itself: software releases from GitHub (C15), and online content such as Bellboard performances. Nobody has to download anything at home and carry it in.
 
-This replaced an earlier design where the Pi joined a phone hotspot during a sync window. The courier model is strictly simpler: no hotspot timeouts, no iOS hotspot behaviour to fight, no window to miss, and it works identically whether or not the WiFi dongle is fitted.
+This reverses an earlier draft of this design, which made a steward the courier: download a bundle at home, walk in, join the Pi's AP and upload it from a phone. That was rejected as too clunky for the people who look after towers. The price is the single-radio update check (C16), with the hotspot behaviour it has to cope with.
 
 **Transport tiers.**
 
 | Payload | Transport |
 |---|---|
 | Controls, admin | Pi AP, always |
-| Content (announcements, methods, events) | Pull when networked, else phone-carried bundle |
-| Sound packs | AP upload, or USB stick |
-| System releases | Signed tarball over any transport |
-
-Sound packs turned out to be 13–40 MB, not hundreds, which is what makes AP upload viable and removes the USB requirement in the common case.
+| System releases | Pulled from GitHub Releases when online (C15). Manual upload on the admin page as a fallback |
+| Methods library | Inside each release (requirements: "Methods") |
+| Announcements, events | Edited on the Pi through the admin page; nothing to deliver |
+| Bellboard performances | Fetched when online, including during a single-radio update check |
+| Sound packs | Uploaded on the admin page (13–40 MB, so an upload over the AP is practical) |
 
 **QR codes.** AP joining via a `WIFI:` URI in a QR code generated with `segno`, printed and stuck to the tower wall, and also shown on the wall display in screensaver state.
 
@@ -429,13 +429,26 @@ Sound packs turned out to be 13–40 MB, not hundreds, which is what makes AP up
 
 **Sequence.**
 
-1. Receive signed tarball (upload, USB, or pull).
+1. Obtain the signed bundle: pulled from GitHub Releases (below), or uploaded on the admin page.
 2. Verify detached signature against the public key baked into the image. Reject on any failure, loudly.
 3. Unpack to `releases/<version>.staging`, then rename into place. Unpack failure leaves nothing half-applied.
 4. Run migrations against `/var/lib/tower` (forward-only, idempotent).
 5. Repoint `current` via symlink rename (atomic) and restart the units.
 6. Health check: units active, HTTP responds, audio device opens, sensor source opens or reports absent-but-expected. Configurable grace period.
 7. On health check failure, repoint `current` to `previous`, restart, and record the failure for display in the admin page.
+
+**Release source: GitHub Releases.** _Planned; not built yet._
+
+- **What is published.** Each GitHub release has the signed `.tower` bundle attached as an asset. The bundle replaces the "ZIP of source and methods XML" sketched in requirements.md; the methods library goes inside it.
+- **Trust stays with the signature.** GitHub and HTTPS are only the transport. A bundle is applied only if it verifies against `/etc/tower/allowed_signers`, exactly as an uploaded one does, so a compromised GitHub account cannot push code to towers without the signing key.
+- **Discovery.** `GET https://api.github.com/repos/<owner>/<repo>/releases/latest`, unauthenticated (the limit is 60 requests an hour per address, far above need). The repository is set in `[update]` config. Pre-releases are ignored unless the tower is on a pre-release channel.
+- **When to check.** At start-up and once a day while online (cable or dongle). With a single radio: at start-up and when an admin presses *Check for updates* (C16); nothing scheduled.
+- **Download, then ask.** A newer version is downloaded and verified in the background and staged, then waits for an admin to press *Apply* on the admin page (requirements: "with an option in the ACP to apply the update"). Never applied automatically. Applying uses the existing activate, health-check and rollback pipeline.
+- **Never loop on a bad release.** A version that failed its health check on this Pi is remembered and not offered again; a later version is. No automatic downgrades.
+- **The clock must be right first.** HTTPS certificate checks fail if the Pi's clock is far out, which it can be with no RTC. Fetching waits for NTP to synchronise (with a timeout) and reports a clock problem plainly, rather than a confusing certificate error.
+- **Shown honestly.** The admin page and diagnostics show the last check, what was found, download progress and any failure.
+
+**Manual upload stays** as the fallback for a tower with no internet at all, and for development (`scripts/deploy-dev.sh`).
 
 **Development loop.** The dev rsync loop deploys _into the release tooling path_, i.e. builds a release and applies it, rather than rsyncing over a live tree. Otherwise the update mechanism is exercised only at release time, breaks silently, and is discovered in a tower.
 
@@ -445,15 +458,28 @@ Sound packs turned out to be 13–40 MB, not hundreds, which is what makes AP up
 
 ### C16 — Network manager
 
-**Modes, selected at runtime, not at build:**
+**No modes: behaviour follows the hardware.** Phones always connect through the Pi's own access point, so the QR codes on the wall work in every tower. There is no network mode to choose; the Pi decides from what is plugged in, and changes when that changes (a cable or dongle plugged in or removed while running):
 
-- `ap` — Pi runs its own access point. Default, works with no dongle, correct for the home tower.
-- `joined` — Pi joins an existing tower WiFi. For towers that have it.
-- `dual` — onboard radio as AP, USB dongle joined to an upstream network. Enables pull updates and NTP in towers with WiFi, while keeping the ringers' AP stable.
+1. **Network cable connected:** access point on the built-in WiFi; internet over the cable. A dongle, if fitted, is not used.
+2. **Otherwise, a USB WiFi dongle and a known network in range:** access point on the built-in WiFi; the dongle joins the first known network that is in range and accepts its password.
+3. **Otherwise, single radio:** an update check at start-up (below), then the access point until the next restart.
+4. **No known networks configured:** access point only, never online. This is also how a tower opts out of going online.
 
-The USB WiFi dongle is optional in every mode. Absence degrades capability, never function.
+In cases 1 and 2 the Pi is online all the time: it checks for updates at start-up and daily (C15). The list of known networks is edited on the admin page, first choice first; the tower's WiFi and stewards' phone hotspots both go here.
 
-**Implementation.** NetworkManager profiles created and switched by the app; no hand-rolled `hostapd`/`dnsmasq` stack. Mode changes are admin-PIN-scoped and survive reboot.
+**Single-radio update check.** With one radio the Pi cannot run the AP and be online at the same time (requirements: "single network option"). So:
+
+1. **When:** at start-up, and when an admin presses *Check for updates* on the admin page. Nothing is scheduled. A requested check waits until the bells have been quiet for a while, so it never interrupts ringing.
+2. The wall display says the Pi is checking for updates, roughly how long it will take, and what to do if it gets stuck (requirements: "Update mode information"). The AP goes down.
+3. The radio joins the first known network in range that accepts its password, such as the tower's WiFi or a steward's phone hotspot. If none is, the AP comes straight back.
+4. It waits for NTP, checks GitHub (C15), downloads and verifies any newer release, and fetches online content such as Bellboard performances.
+5. The AP comes back as soon as there is nothing more to download, or when the check's time limit is reached, whichever is first. It then stays on the AP until the next restart or the next *Check for updates*. A downloaded release waits for an admin to press *Apply* (C15).
+
+The Pi never finishes a check without its AP. Known risk: an iPhone's Personal Hotspot is only visible to new devices while its settings screen is open, so a steward using one must have it open when the check starts; the *Check for updates* button lets them start it at the right moment.
+
+**Status.** _Built (M1–M2) and to be replaced in M2b:_ an admin-chosen mode (`ap`, `joined`, `dual`); `joined` makes the Pi a client of the tower's WiFi with no AP, which this design drops. Already built and carried over: the known-networks list, cable detection, the dongle, internet sharing, WiFi power saving off, and never leaving the Pi unreachable.
+
+**Implementation.** NetworkManager profiles created and switched by the app; no hand-rolled `hostapd`/`dnsmasq` stack. Changes to the known networks and AP settings are admin-PIN-scoped and survive reboot.
 
 **Time.** No RTC and possibly no internet. Timestamps within a session are monotonic and therefore always correct relative to each other. Wall-clock is best-effort: NTP when networked, otherwise accept a browser-supplied time on first admin connection of the day. Session headers record whether wall-clock was trusted.
 
@@ -463,7 +489,7 @@ The USB WiFi dongle is optional in every mode. Absence degrades capability, neve
 
 **Config layering:** shipped defaults → tower config in `/etc/tower/tower.toml` → runtime overrides set through the UI. Only the last two survive an update.
 
-**Admin PIN scope:** network mode, updates, content upload, calibration, profile administration. Explicitly _not_ the simulator, the notice board display, or bell claiming. Keeping the PIN off the everyday path is what stops it being written on the wall next to the QR code.
+**Admin PIN scope:** network settings, updates, content upload, calibration, profile administration. Explicitly _not_ the simulator, the notice board display, or bell claiming. Keeping the PIN off the everyday path is what stops it being written on the wall next to the QR code.
 
 ---
 
@@ -510,11 +536,19 @@ _Exit:_ `python -m tower --source=synthetic` runs identically on Mac and desk Pi
 
 _Exit:_ build a release on the Mac, carry it in on a phone, join the Pi's AP, upload it, watch it apply and health-check. Then deliberately ship a broken release and watch it roll back unattended. Diagnostics page exists and is honest.
 
+_Since M1:_ the primary delivery route has changed to pulling from GitHub (C14, C15, M2b). M1's upload remains as the fallback and the development route.
+
 ### M2 — Basic sound
 
 Serial pulse source with VID/PID resolution, latency-timer fix, and the full 16-bell character map including the 11/12 case fix. Clock discipline with the percentile-minimum offset estimator. Audio engine, sound pack format and manifest, in-process mixing, ALSA output. Strike scheduler with per-bell per-stroke offsets. Calibration mode with by-ear nudging. RT-to-app event socket, SSE stream, and a first cosmetic wall animation.
 
 _Exit:_ a band rings on tied bells and it sounds right. Measured jitter under 10 ms over a few thousand blows on the desk Pi. Offsets calibrated by ringing open with the simulator sounding simultaneously. Sound pack uploaded over the AP, not copied by hand.
+
+### M2b — Updates from GitHub
+
+_Proposed next, so towers in the field update themselves before more features ship._ Publish signed bundles as GitHub release assets from CI or a release script. On the Pi: discovery, background download and verification, staging, *Apply* on the admin page, remembered failures, the NTP wait. Replace the network modes with behaviour chosen from the hardware (C16), including the single-radio update check and the wall display's update message. *Check for updates* on the admin page.
+
+_Exit:_ publish a release on GitHub; a desk Pi on a cable finds it, downloads it and offers it; an admin applies it. A single-radio Pi with a phone hotspot as a known network does the same in its start-up check, and is back on its AP afterwards. Plugging in or removing a cable or dongle changes the behaviour without a restart. A deliberately broken release rolls back and is not offered again.
 
 ### M3 — Striking score for a touch
 
@@ -536,7 +570,7 @@ _Exit:_ one real bell and seven simulated, a quarter-length touch of a chosen me
 
 ### M6 — Everything else
 
-Notice board and announcements with frontmatter and an expiry policy. Content bundle courier flow generalised beyond sound packs. Pull sync for towers in `dual` mode. Screensaver state with events and recent touches. Touch history browsing. Bellboard links. Profile deletion if that question resolves in favour.
+Notice board and announcements with frontmatter and an expiry policy. Online content (Bellboard performances) fetched when online and during single-radio update checks. Screensaver state with events and recent touches. Touch history browsing. Bellboard links. Profile deletion if that question resolves in favour.
 
 ---
 
@@ -549,8 +583,12 @@ Notice board and announcements with frontmatter and an expiry policy. Content bu
 | 3 | Audio binding choice | M2 start | `pyalsaaudio` now, `ctypes` later if distribution complains |
 | 4 | Profile deletion in UI | M4/M6 | Allow, with typed confirmation and a 30-day tombstone |
 | 5 | Wall-clock trust without NTP or RTC | M2 | Accept browser time on first admin connection; record trust flag in session header |
+| 6 | Where releases are published | M2b | Pis download anonymously, so the releases must be public: either make this repository public, or publish bundles to a separate public repository |
+| 9 | Hotspot behaviour in single-radio update checks | M2b | Test with real iPhone and Android hotspots; the *Check for updates* button lets a steward start a check while their hotspot is visible |
 
-Note that the earlier open question about sync-window timeout behaviour with real iPhone hotspots is now moot: the phone-as-courier model removed the sync window entirely.
+Resolved: releases are downloaded automatically and applied only when an admin presses *Apply*; single-radio checks run at start-up and on request, never on a schedule.
+
+The question of how single-radio checks behave with real phone hotspots is back, because releases are pulled again rather than carried in (C14).
 
 ## 6. Where this document has made new calls
 
@@ -568,7 +606,7 @@ Flagging these so they can be overruled rather than silently inherited:
 
 - **Signatures use OpenSSH (`ssh-keygen -Y sign/verify`)**, namespace `tower-release`, verified against `/etc/tower/allowed_signers`. The stdlib has no Ed25519, and `ssh-keygen` ships on both the Mac and the Pi, so this adds no dependency.
 - **Production runs the system `python3` with vendored pure-Python dependencies, not an on-Pi venv.** This overrides "venv built on-Pi" in §3: an offline tower cannot `uv sync`, so a release must carry its dependencies. The venv remains the Mac dev environment. A C-extension audio binding (M2) will have to come from Debian packages (`python3-alsaaudio`), not the bundle.
-- **A bundle is one file** (`.tower`: a tar of `payload.tar.gz` plus its signature), so a phone carries a single upload. Every file is listed with its SHA-256 in `RELEASE.json` and checked after unpacking.
+- **A bundle is one file** (`.tower`: a tar of `payload.tar.gz` plus its signature), so it is a single upload, and (since the move to GitHub) a single release asset. Every file is listed with its SHA-256 in `RELEASE.json` and checked after unpacking.
 - **Activation runs in a separate oneshot unit, `tower-update.service`.** The app verifies and stages, then hands over; it cannot restart itself and judge its own health. The updater runs from the release that was current when it started, so a broken release cannot break its own rollback. Migrations run from the new release.
 - **The process pins itself to its release's real path at import**, so a lazy import after the `current` symlink moves can never load another release's code.
 - **The app runs as an unprivileged `tower` user.** A polkit rule grants exactly: start/restart of `tower.service` and `tower-update.service`, and NetworkManager. `/opt/tower` is owned by `tower`, so staging and the symlink swap need no root.
@@ -603,3 +641,29 @@ The target moved from Bookworm to Trixie (Debian 13): Python 3.13 and numpy 2.2 
 - **It waits for `/api/health` to answer before starting**, so the screen never shows a connection error at boot.
 - **Pages reload when the app version changes.** The state snapshot on every SSE (re)connect carries the version; a page that sees a new one after an update reloads, so the unattended wall display never runs stale code.
 - **Not yet handled:** display rotation and resolution, hiding the mouse pointer if a mouse is plugged in, and turning the monitor off out of hours.
+
+### Surviving power cuts
+
+Found on the first real Pi: the admin PIN file came back empty after the Pi lost power shortly after the PIN was set.
+
+- **All state is written with `tower.fsutil.atomic_write`:** temporary file, `fsync`, rename, `fsync` of the directory. Rename alone is atomic but, on ext4, a new file's contents may not reach the card before a power cut. New state files must use it too.
+- **Releases and sound packs are synced to the card (`os.sync`) before they can be switched to**, so a power cut after an update cannot leave a half-written release as `current`.
+- **Every state file read at startup tolerates damage.** Damaged overrides are set aside, falling back to tower config and defaults, so the access point and admin page stay reachable. A damaged migrations record reruns the idempotent migrations, and a damaged update request is dropped. The one exception is the admin PIN file: damage is reported with how to reset it, and never treated as "no PIN set", which would let anyone take over the admin page.
+
+### Single radio: known networks and the AP fallback
+
+_Superseded in part by the hardware-driven design in C16: the permanent `joined` mode described here goes in M2b. The known-networks list and the never-unreachable rule carry over._
+
+Resolves a conflict between requirements.md ("Internet access") and C14/C16. The requirements describe single-radio joining as a temporary update mode; `joined` is also a permanent mode for towers with their own WiFi. Built so far:
+
+- **A list of known networks** (`network.uplinks`, edited on the admin page), first choice first, one NetworkManager profile each (`tower-uplink`, `tower-uplink-2`, …). The older single `uplink_ssid`/`uplink_psk` still works and counts as first choice.
+- **AP until reboot.** In `joined` mode, if none of the known networks is in range when the Pi starts, or the connection is lost and not regained within `fallback_after_s` (90 s), the Pi runs its access point until it restarts. Nothing persistent changes, so the next boot tries the known networks again. The admin page says when this has happened. This is what stops a single-radio Pi becoming unreachable.
+
+**Planned (M2b):** the temporary update mode itself, including returning to the AP once there is nothing to download: the single-radio update check in C16. The courier model it once replaced has been dropped (C14).
+
+### Network cable and internet sharing
+
+_The cable rule below becomes general in C16 (a cable always means AP plus internet over the cable, with no mode involved). Internet sharing carries over unchanged._
+
+- **A connected cable is the internet connection.** In `joined` mode, a network cable means the radio runs the access point instead of joining a known network; unplugging the cable goes back to joining one (or to the AP-until-reboot fallback). The watchdog notices within 10 s. This is the requirements' "two network cards" setup, with the cable as the second card. Not persistent: at boot the known networks autoconnect, and the app moves the radio to the AP if the cable is still in.
+- **`network.ap_share_internet`, default off (local only).** NetworkManager's shared mode always NATs AP clients out through the Pi's internet connection. Local only works by having the AP's DHCP server (NM's dnsmasq, via `/etc/NetworkManager/dnsmasq-shared.d/tower-ap.conf`) offer no default route, so phones keep their mobile data for the internet. This is not a firewall: a phone configured by hand could still route through the Pi. A real block would need a root-managed firewall rule. `install.sh` creates the file owned by `tower` so the app can rewrite it; the change takes effect when the AP next starts, which applying the network setting does.

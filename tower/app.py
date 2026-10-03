@@ -108,6 +108,7 @@ def _ensure_network(app: TowerApp) -> None:
     if not app.net.available():
         log.info("nmcli not available; network management disabled on this host")
         return
+    threading.Thread(target=app.run_watchdog, args=(app.stop,), name="net-watchdog", daemon=True).start()
     try:
         if app.net.in_effect():
             return

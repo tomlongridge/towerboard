@@ -17,12 +17,13 @@ Session headers (M3) record which source applied.
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+from tower.fsutil import atomic_write
 
 BOOT_ID = Path("/proc/sys/kernel/random/boot_id")
 MAX_PLAUSIBLE_S = 10 * 365 * 86400  # reject phones claiming to be a decade adrift
@@ -88,10 +89,7 @@ class WallClock:
             raise ValueError("browser time is implausible")
         self._offset, self._source = offset, "browser"
         self._set_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"boot_id": _boot_id(), "offset_s": offset, "set_at": self._set_at}))
-        os.replace(tmp, self.path)
+        atomic_write(self.path, json.dumps({"boot_id": _boot_id(), "offset_s": offset, "set_at": self._set_at}))
         return True
 
     def status(self) -> dict:

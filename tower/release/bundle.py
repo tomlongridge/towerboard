@@ -52,15 +52,23 @@ class ReleaseError(Exception):
 # --- build (Mac) -------------------------------------------------------------
 
 
-def git_version(src: Path, base: str) -> tuple[str, str | None]:
-    """``0.2.0+g1a2b3c4`` (``.dirty`` if the tree has changes), or ``0.2.0`` outside git."""
+def git_version(src: Path, base: str, now: datetime | None = None) -> tuple[str, str | None]:
+    """``0.2.0+g1a2b3c4``, or ``0.2.0`` outside git.
+
+    With uncommitted changes, ``0.2.0+g1a2b3c4.dirty.20261003121500``: the build
+    time makes every development build a distinct version, so deploying twice
+    from the same commit is not refused as "already the current release".
+    """
     try:
         sha = _git(src, "rev-parse", "--short=7", "HEAD")
     except (OSError, subprocess.CalledProcessError):
         return base, None
     # Untracked files count: the build includes everything under these trees.
     dirty = bool(_git(src, "status", "--porcelain", "--", "tower", "deploy"))
-    return f"{base}+g{sha}{'.dirty' if dirty else ''}", sha
+    if not dirty:
+        return f"{base}+g{sha}", sha
+    stamp = (now or datetime.now(timezone.utc)).strftime("%Y%m%d%H%M%S")
+    return f"{base}+g{sha}.dirty.{stamp}", sha
 
 
 def _git(src: Path, *args: str) -> str:

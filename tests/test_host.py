@@ -96,6 +96,12 @@ class HandoffTest(unittest.TestCase):
         self.assertEqual(host.take_request(state), {"action": "activate", "version": "1.2.3"})
         self.assertIsNone(host.take_request(state))  # consumed exactly once
 
+    def test_damaged_request_dropped(self):
+        state = Path(tempfile.mkdtemp())
+        (state / host.REQUEST_FILE).write_text("")
+        self.assertIsNone(host.take_request(state))
+        self.assertFalse((state / host.REQUEST_FILE).exists())
+
     def test_start_updater(self):
         run = systemctl()
         host.start_updater(run)

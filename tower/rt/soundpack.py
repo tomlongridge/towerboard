@@ -220,6 +220,7 @@ def install_zip(data_path: Path, packs_dir: Path, rate: int) -> SoundPack:
                     raise PackError(f"bell {b['number']}: {b['file']} missing from zip") from None
                 (staging / b["file"]).write_bytes(data)
             pack = load_dir(staging, rate)  # decodes every WAV: proves the pack is usable
+            os.sync()  # on the card before it replaces the pack in use
             final = packs_dir / m["id"]
             if final.exists():
                 old = packs_dir / f".{m['id']}.old"
